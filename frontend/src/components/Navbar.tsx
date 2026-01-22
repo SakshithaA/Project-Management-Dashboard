@@ -44,7 +44,7 @@ export default function Navbar() {
         </div>
       </div>
 
-      {/* Tabs Section - Simple and clean */}
+      {/* Tabs Section */}
       <Tabs
         defaultActiveKey="overview"
         items={[
