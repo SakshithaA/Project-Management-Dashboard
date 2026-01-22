@@ -160,7 +160,7 @@ export default function ProjectCards() {
               </span>
             </div>
 
-            {/* Progress Bar - All Same Color */}
+            {/* Progress Bar */}
             <div className="mb-5">
               <div className="flex justify-between items-center mb-2">
                 <span className="text-sm font-medium text-gray-700">Progress</span>
@@ -169,7 +169,7 @@ export default function ProjectCards() {
               <Progress 
                 percent={project.progress} 
                 showInfo={false}
-                strokeColor="#3b82f6" // Same blue color for all progress bars
+                strokeColor="#3b82f6" 
                 className="mb-1"
               />
             </div>
