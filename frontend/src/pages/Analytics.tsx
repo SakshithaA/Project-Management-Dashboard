@@ -325,13 +325,6 @@ export default function Analytics() {
             </ResponsiveContainer>
           </div>
           
-          <div className="flex justify-between mt-1 px-1">
-            <span className="text-[10px] text-gray-500">0h</span>
-            <span className="text-[10px] text-gray-500">150h</span>
-            <span className="text-[10px] text-gray-500">300h</span>
-            <span className="text-[10px] text-gray-500">450h</span>
-            <span className="text-[10px] text-gray-500">600h</span>
-          </div>
         </Card>
       </div>
 
