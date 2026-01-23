@@ -6,7 +6,7 @@ import {
 } from "@ant-design/icons";
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, 
-  Tooltip, ResponsiveContainer,
+  Tooltip, ResponsiveContainer, LineChart, Line,
   PieChart, Pie, Cell
 } from 'recharts';
 import { Card } from 'antd';
@@ -60,6 +60,13 @@ export default function Analytics() {
     { name: 'Alex Thompson', hours: 260 },
   ];
 
+  const projectTimelineData = [
+    { month: 'Nov 2023', projects: 0 },
+    { month: 'Jan 2024', projects: 2 },
+    { month: 'Feb 2024', projects: 2 },
+    { month: 'Mar 2024', projects: 1 },
+  ];
+
   const analyticsStats = [
     {
       title: "Total Team Members",
@@ -109,6 +116,18 @@ export default function Analytics() {
         <div className="bg-white p-3 rounded-lg shadow-lg border border-gray-200">
           <p className="font-medium text-gray-900">{payload[0].payload.name}</p>
           <p className="text-sm text-gray-700">Hours: {payload[0].value}</p>
+        </div>
+      );
+    }
+    return null;
+  };
+
+  const LineTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-white p-3 rounded-lg shadow-lg border border-gray-200">
+          <p className="font-medium text-gray-900">{label}</p>
+          <p className="text-sm text-gray-700">Projects: {payload[0].value}</p>
         </div>
       );
     }
@@ -275,7 +294,7 @@ export default function Analytics() {
               <BarChart
                 data={teamWorkloadData}
                 layout="vertical"
-                margin={{ top: 5, right: 30, left: 10, bottom: 5 }}
+                margin={{ top: 5, right: 30, left: 0, bottom: 5 }}
               >
                 <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" horizontal={true} vertical={false} />
                 <XAxis 
@@ -291,7 +310,7 @@ export default function Analytics() {
                   dataKey="name"
                   axisLine={false}
                   tickLine={false}
-                  tick={{ fill: '#374151', fontSize: 12 }}
+                  tick={{ fill: '#374151', fontSize: 10 }}
                   width={100}
                 />
                 <Tooltip content={<BarTooltip />} />
@@ -312,6 +331,49 @@ export default function Analytics() {
             <span className="text-xs text-gray-500">300h</span>
             <span className="text-xs text-gray-500">450h</span>
             <span className="text-xs text-gray-500">600h</span>
+          </div>
+        </Card>
+      </div>
+
+      <div className="mt-10">
+        <Card className="rounded-lg border border-gray-200">
+          <div className="mb-4">
+            <h3 className="font-semibold text-gray-900">Project Timeline</h3>
+            <p className="text-sm text-gray-500 mt-1">Project starts over time</p>
+          </div>
+          
+          <div className="h-[300px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart
+                data={projectTimelineData}
+                margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
+                <XAxis 
+                  dataKey="month"
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fill: '#6b7280', fontSize: 12 }}
+                />
+                <YAxis 
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fill: '#6b7280', fontSize: 11 }}
+                  domain={[0, 2.5]}
+                  ticks={[0, 0.5, 1, 1.5, 2]}
+                />
+                <Tooltip content={<LineTooltip />} />
+                <Line 
+                  type="monotone"
+                  dataKey="projects"
+                  name="Projects"
+                  stroke="#111827"
+                  strokeWidth={3}
+                  dot={{ fill: '#111827', strokeWidth: 2, r: 4 }}
+                  activeDot={{ r: 6 }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
           </div>
         </Card>
       </div>

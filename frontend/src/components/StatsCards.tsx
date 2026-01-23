@@ -19,10 +19,10 @@ interface StatsCardsProps {
 export default function StatsCards({ 
   stats, 
   className = "", 
-  cardWidth = "w-55" 
+  cardWidth = "w-100" 
 }: StatsCardsProps) {
   return (
-    <div className={`flex justify-between mt-1 mx-35 ${className}`}>
+    <div className={`flex justify-between mt-1 mx-15 ${className}`}>
       {stats.map((stat, index) => (
         <Card
           key={stat.title}
@@ -37,9 +37,9 @@ export default function StatsCards({
         >
           <div className="flex justify-between items-center h-full">
             <div className="flex-1">
-              <p className="text-sm text-gray-500 ml-5">{stat.title}</p>
+              <p className="text-sm text-gray-500 text-center">{stat.title}</p>
 
-              <p className="text-3xl font-semibold text-gray-900 text-center my-2">
+              <p className="text-4xl font-semibold text-gray-900 text-center my-2">
                 {stat.value}
               </p>
 
