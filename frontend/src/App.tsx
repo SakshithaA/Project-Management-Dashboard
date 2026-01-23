@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Route, Routes } from 'react-router-dom'
 import Navbar from './components/Navbar'
 import Home from './pages/Home'
 import Analytics from './pages/Analytics'
+import POCCards from './pages/POCs'
 import './App.css'
 
 export default function App() {
@@ -14,6 +15,7 @@ export default function App() {
             <Route path="/" element={<Home />} />
             <Route path="/overview" element={<Home />} />
             <Route path="/analytics" element={<Analytics />} />
+            <Route path="/pocs" element={<POCCards />} />
           </Routes>
         </div>
       </div>
