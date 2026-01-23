@@ -8,7 +8,7 @@ interface PieChartCardProps {
   height?: number;
 }
 
-export default function PieChartCard({ title, description, data, height = 250 }: PieChartCardProps) {
+export default function PieChartCard({ title, description, data }: PieChartCardProps) {
   return (
     <Card className="rounded-lg border border-gray-200 h-full">
       <div className="mb-4">

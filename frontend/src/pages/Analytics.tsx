@@ -101,9 +101,9 @@ export default function Analytics() {
   const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
       return (
-        <div className="bg-white p-3 rounded-lg shadow-lg border border-gray-200">
+        <div className="bg-white p-2 rounded-md shadow-sm border border-gray-200 text-xs">
           <p className="font-medium text-gray-900">{payload[0].name}</p>
-          <p className="text-sm text-gray-700">{payload[0].value} projects</p>
+          <p className="text-gray-700">{payload[0].value} projects</p>
         </div>
       );
     }
@@ -113,9 +113,9 @@ export default function Analytics() {
   const BarTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
       return (
-        <div className="bg-white p-3 rounded-lg shadow-lg border border-gray-200">
+        <div className="bg-white p-2 rounded-md shadow-sm border border-gray-200 text-xs">
           <p className="font-medium text-gray-900">{payload[0].payload.name}</p>
-          <p className="text-sm text-gray-700">Hours: {payload[0].value}</p>
+          <p className="text-gray-700">Hours: {payload[0].value}</p>
         </div>
       );
     }
@@ -125,9 +125,9 @@ export default function Analytics() {
   const LineTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       return (
-        <div className="bg-white p-3 rounded-lg shadow-lg border border-gray-200">
+        <div className="bg-white p-2 rounded-md shadow-sm border border-gray-200 text-xs">
           <p className="font-medium text-gray-900">{label}</p>
-          <p className="text-sm text-gray-700">Projects: {payload[0].value}</p>
+          <p className="text-gray-700">Projects: {payload[0].value}</p>
         </div>
       );
     }
@@ -138,7 +138,7 @@ export default function Analytics() {
     const { cx, cy, midAngle, innerRadius, outerRadius, value, name } = props;
     const RADIAN = Math.PI / 180;
     
-    const radius = outerRadius + 20;
+    const radius = outerRadius + 15;
     const x = cx + radius * Math.cos(-midAngle * RADIAN);
     const y = cy + radius * Math.sin(-midAngle * RADIAN);
 
@@ -150,15 +150,15 @@ export default function Analytics() {
           fill="#111827"
           textAnchor={x > cx ? 'start' : 'end'} 
           dominantBaseline="central"
-          className="text-xs font-medium"
+          className="text-[10px] font-medium"
         >
           {name} ({value})
         </text>
         <line 
-          x1={cx + (outerRadius + 5) * Math.cos(-midAngle * RADIAN)} 
-          y1={cy + (outerRadius + 5) * Math.sin(-midAngle * RADIAN)} 
-          x2={cx + (outerRadius + 15) * Math.cos(-midAngle * RADIAN)} 
-          y2={cy + (outerRadius + 15) * Math.sin(-midAngle * RADIAN)} 
+          x1={cx + (outerRadius + 3) * Math.cos(-midAngle * RADIAN)} 
+          y1={cy + (outerRadius + 3) * Math.sin(-midAngle * RADIAN)} 
+          x2={cx + (outerRadius + 12) * Math.cos(-midAngle * RADIAN)} 
+          y2={cy + (outerRadius + 12) * Math.sin(-midAngle * RADIAN)} 
           stroke="#9ca3af"
           strokeWidth="1"
         />
@@ -167,23 +167,23 @@ export default function Analytics() {
   };
 
   const renderFirstRowPieChart = (title: string, description: string, data: any[]) => (
-    <Card className="rounded-lg border border-gray-200 h-full">
-      <div className="mb-4">
-        <h3 className="font-semibold text-gray-900">{title}</h3>
-        <p className="text-sm text-gray-500 mt-1">{description}</p>
+    <Card className="rounded-lg border border-gray-200 h-full p-4">
+      <div className="mb-3">
+        <h3 className="font-semibold text-gray-900 text-sm">{title}</h3>
+        <p className="text-xs text-gray-500 mt-0.5">{description}</p>
       </div>
       
-      <div className="h-[320px]">
+      <div className="h-[240px]">
         <ResponsiveContainer width="100%" height="100%">
-          <PieChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
+          <PieChart margin={{ top: 10, right: 10, bottom: 10, left: 10 }}>
             <Pie
               data={data}
               cx="50%"
               cy="50%"
               labelLine={true}
               label={renderCustomLabel}
-              outerRadius={80}
-              innerRadius={20}
+              outerRadius={70}
+              innerRadius={15}
               fill="#8884d8"
               dataKey="value"
             >
@@ -199,14 +199,14 @@ export default function Analytics() {
   );
 
   const renderSecondRowPieChart = (title: string, description: string, data: any[]) => (
-    <Card className="rounded-lg border border-gray-200 h-full">
-      <div className="mb-4">
-        <h3 className="font-semibold text-gray-900">{title}</h3>
-        <p className="text-sm text-gray-500 mt-1">{description}</p>
+    <Card className="rounded-lg border border-gray-200 h-full p-4">
+      <div className="mb-3">
+        <h3 className="font-semibold text-gray-900 text-sm">{title}</h3>
+        <p className="text-xs text-gray-500 mt-0.5">{description}</p>
       </div>
       
       <div className="flex">
-        <div className="h-[220px] w-1/2">
+        <div className="h-[180px] w-1/2">
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
               <Pie
@@ -214,7 +214,7 @@ export default function Analytics() {
                 cx="50%"
                 cy="50%"
                 labelLine={false}
-                outerRadius={70}
+                outerRadius={55}
                 fill="#8884d8"
                 dataKey="value"
               >
@@ -227,17 +227,17 @@ export default function Analytics() {
           </ResponsiveContainer>
         </div>
         
-        <div className="w-1/2 pl-4 flex flex-col justify-center">
-          <div className="space-y-3">
+        <div className="w-1/2 pl-3 flex flex-col justify-center">
+          <div className="space-y-2">
             {data.map((item, index) => (
-              <div key={index} className="flex items-center gap-2">
+              <div key={index} className="flex items-center gap-1.5">
                 <div 
-                  className="w-4 h-4 rounded-full flex-shrink-0" 
+                  className="w-3 h-3 rounded-full flex-shrink-0" 
                   style={{ backgroundColor: item.color }}
                 />
                 <div>
-                  <p className="text-sm font-medium text-gray-900">{item.name}</p>
-                  <p className="text-xs text-gray-500">{item.value} issues</p>
+                  <p className="text-xs font-medium text-gray-900">{item.name}</p>
+                  <p className="text-[10px] text-gray-500">{item.value} issues</p>
                 </div>
               </div>
             ))}
@@ -248,20 +248,20 @@ export default function Analytics() {
   );
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Analytics Overview</h1>
-        <p className="text-gray-500 mt-2">
+    <div className="min-h-screen bg-gray-50 p-4">
+      <div className="mb-6">
+        <h1 className="text-xl font-bold text-gray-900">Analytics Overview</h1>
+        <p className="text-gray-500 mt-1 text-xs">
           Comprehensive insights into project performance and team workload
         </p>
       </div>
 
       <StatsCards stats={analyticsStats} />
 
-      <div className="mt-10">
-        <h2 className="text-xl font-semibold text-gray-800 mb-6">Project Distribution</h2>
+      <div className="mt-8">
+        <h2 className="text-sm font-semibold text-gray-800 mb-4">Project Distribution</h2>
         
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {renderFirstRowPieChart(
             "Projects by Type",
             "Distribution of project types across the portfolio",
@@ -276,32 +276,32 @@ export default function Analytics() {
         </div>
       </div>
 
-      <div className="mt-10 grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-4">
         {renderSecondRowPieChart(
           "Issue Status",
           "Open vs resolved issues across all projects",
           issueStatusData
         )}
 
-        <Card className="rounded-lg border border-gray-200">
-          <div className="mb-4">
-            <h3 className="font-semibold text-gray-900">Team Workload Analysis</h3>
-            <p className="text-sm text-gray-500 mt-1">Top 10 team members by allocated hours</p>
+        <Card className="rounded-lg border border-gray-200 p-4">
+          <div className="mb-3">
+            <h3 className="font-semibold text-gray-900 text-sm">Team Workload Analysis</h3>
+            <p className="text-xs text-gray-500 mt-0.5">Top 10 team members by allocated hours</p>
           </div>
           
-          <div className="h-[300px]">
+          <div className="h-[250px]">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
                 data={teamWorkloadData}
                 layout="vertical"
-                margin={{ top: 5, right: 30, left: 0, bottom: 5 }}
+                margin={{ top: 5, right: 20, left: 0, bottom: 5 }}
               >
-                <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" horizontal={true} vertical={false} />
+                <CartesianGrid strokeDasharray="2 2" stroke="#f3f4f6" horizontal={true} vertical={false} />
                 <XAxis 
                   type="number"
                   axisLine={false}
                   tickLine={false}
-                  tick={{ fill: '#6b7280', fontSize: 11 }}
+                  tick={{ fill: '#6b7280', fontSize: 10 }}
                   domain={[0, 600]}
                   ticks={[0, 150, 300, 450, 600]}
                 />
@@ -310,55 +310,55 @@ export default function Analytics() {
                   dataKey="name"
                   axisLine={false}
                   tickLine={false}
-                  tick={{ fill: '#374151', fontSize: 10 }}
-                  width={100}
+                  tick={{ fill: '#374151', fontSize: 9 }}
+                  width={90}
                 />
                 <Tooltip content={<BarTooltip />} />
                 <Bar 
                   dataKey="hours" 
                   name="Hours"
                   fill="#111827"
-                  radius={[0, 4, 4, 0]}
-                  barSize={14}
+                  radius={[0, 3, 3, 0]}
+                  barSize={12}
                 />
               </BarChart>
             </ResponsiveContainer>
           </div>
           
-          <div className="flex justify-between mt-2 px-2">
-            <span className="text-xs text-gray-500">0h</span>
-            <span className="text-xs text-gray-500">150h</span>
-            <span className="text-xs text-gray-500">300h</span>
-            <span className="text-xs text-gray-500">450h</span>
-            <span className="text-xs text-gray-500">600h</span>
+          <div className="flex justify-between mt-1 px-1">
+            <span className="text-[10px] text-gray-500">0h</span>
+            <span className="text-[10px] text-gray-500">150h</span>
+            <span className="text-[10px] text-gray-500">300h</span>
+            <span className="text-[10px] text-gray-500">450h</span>
+            <span className="text-[10px] text-gray-500">600h</span>
           </div>
         </Card>
       </div>
 
-      <div className="mt-10">
-        <Card className="rounded-lg border border-gray-200">
-          <div className="mb-4">
-            <h3 className="font-semibold text-gray-900">Project Timeline</h3>
-            <p className="text-sm text-gray-500 mt-1">Project starts over time</p>
+      <div className="mt-8">
+        <Card className="rounded-lg border border-gray-200 p-4">
+          <div className="mb-3">
+            <h3 className="font-semibold text-gray-900 text-sm">Project Timeline</h3>
+            <p className="text-xs text-gray-500 mt-0.5">Project starts over time</p>
           </div>
           
-          <div className="h-[300px]">
+          <div className="h-[250px]">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart
                 data={projectTimelineData}
-                margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
+                margin={{ top: 10, right: 20, left: 10, bottom: 10 }}
               >
-                <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
+                <CartesianGrid strokeDasharray="2 2" stroke="#f3f4f6" />
                 <XAxis 
                   dataKey="month"
                   axisLine={false}
                   tickLine={false}
-                  tick={{ fill: '#6b7280', fontSize: 12 }}
+                  tick={{ fill: '#6b7280', fontSize: 11 }}
                 />
                 <YAxis 
                   axisLine={false}
                   tickLine={false}
-                  tick={{ fill: '#6b7280', fontSize: 11 }}
+                  tick={{ fill: '#6b7280', fontSize: 10 }}
                   domain={[0, 2.5]}
                   ticks={[0, 0.5, 1, 1.5, 2]}
                 />
@@ -368,9 +368,9 @@ export default function Analytics() {
                   dataKey="projects"
                   name="Projects"
                   stroke="#111827"
-                  strokeWidth={3}
-                  dot={{ fill: '#111827', strokeWidth: 2, r: 4 }}
-                  activeDot={{ r: 6 }}
+                  strokeWidth={2}
+                  dot={{ fill: '#111827', strokeWidth: 1, r: 3 }}
+                  activeDot={{ r: 5 }}
                 />
               </LineChart>
             </ResponsiveContainer>
