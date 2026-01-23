@@ -1,6 +1,11 @@
+import { 
+  ProjectOutlined,
+  RiseOutlined,
+  CheckCircleOutlined,
+  ExclamationCircleOutlined,
+} from "@ant-design/icons";
 import { useState } from "react";
 import StatsCards from "../components/StatsCards";
-import Navbar from "../components/Navbar";
 import ProjectCards from "../components/projectcard";
 import Filter from "../components/Filter";
 
@@ -15,12 +20,42 @@ export default function Home() {
     setSelectedStatuses([]);
   };
 
-  return (
-    <div className="min-h-screen bg-gray-50">
-      
-      {/* Stats Cards */}
-      <StatsCards />
+  const overviewStats = [
+    {
+      title: "Total Projects",
+      value: 5,
+      icon: <ProjectOutlined />,
+      color: "text-gray-600",
+      bgColor: "bg-gray-50"
+    },
+    {
+      title: "In Progress",
+      value: 4,
+      icon: <RiseOutlined />,
+      color: "text-blue-500",
+      bgColor: "bg-blue-50"
+    },
+    {
+      title: "Completed",
+      value: 1,
+      icon: <CheckCircleOutlined />,
+      color: "text-green-500",
+      bgColor: "bg-green-50"
+    },
+    {
+      title: "Open Issues",
+      value: 3,
+      icon: <ExclamationCircleOutlined />,
+      color: "text-red-500",
+      bgColor: "bg-red-50"
+    },
+  ];
 
+  return (
+    <div className="min-h-screen bg-gray-50">    
+      {/* Stats Cards for Overview */}
+      <StatsCards stats={overviewStats} />
+      
       {/* Filters */}
       <Filter 
         onSearchChange={setSearchText}

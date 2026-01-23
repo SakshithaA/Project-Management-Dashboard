@@ -49,7 +49,7 @@ export default function Navbar() {
   };
 
   return (
-    <div className="p-10 bg-white">
+    <div className="pt-9 pl-35 pr-35 pb-2 bg-white">
       {/* Header Section */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6 mb-2">
         {/* Title Section */}
@@ -63,7 +63,7 @@ export default function Navbar() {
         </div>
 
         {/* Buttons Section */}
-        <div className="flex flex-wrap gap-3">
+        <div className="flex flex-wrap gap-4">
           <Button
             icon={<PlusOutlined />}
             className="h-10 px-4 border border-gray-300 bg-white hover:bg-gray-50 text-gray-700 hover:text-gray-900 hover:border-gray-400 transition-all duration-150 flex items-center gap-2 font-normal"
@@ -121,7 +121,6 @@ export default function Navbar() {
             ),
           },
         ]}
-        className="mt-2"
       />
     </div>
   );
