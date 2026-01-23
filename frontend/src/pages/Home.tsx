@@ -17,10 +17,6 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Navbar */}
-      <div className="bg-white rounded-xl p-6 mt-0 shadow-sm">
-        <Navbar />
-      </div>
       
       {/* Stats Cards */}
       <StatsCards />

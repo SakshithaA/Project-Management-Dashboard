@@ -79,7 +79,7 @@ export default function ProjectCards({
       id: 4,
       title: "Mobile App Development",
       client: "TechMobile Inc",
-      progress: 90,
+      progress: 100,
       members: 4,
       hoursAllocated: 1200,
       issues: 0,
