@@ -1,4 +1,4 @@
-import { Card, Progress, Tag } from "antd";
+import { Card, Progress, Empty } from "antd";
 import { 
   TeamOutlined, 
   ClockCircleOutlined, 
@@ -6,8 +6,33 @@ import {
   CalendarOutlined
 } from "@ant-design/icons";
 
-export default function ProjectCards() {
-  const projects = [
+interface Project {
+  id: number;
+  title: string;
+  client: string;
+  progress: number;
+  members: number;
+  hoursAllocated: number;
+  issues: number;
+  startDate: string;
+  endDate: string;
+  color: string;
+  type: string;
+  stage: string;
+}
+
+interface ProjectCardsProps {
+  searchText?: string;
+  selectedTypes?: string[];
+  selectedStatuses?: string[];
+}
+
+export default function ProjectCards({ 
+  searchText = "", 
+  selectedTypes = [], 
+  selectedStatuses = [] 
+}: ProjectCardsProps) {
+  const projects: Project[] = [
     {
       id: 1,
       title: "E-commerce Platform Rebuild",
@@ -94,6 +119,25 @@ export default function ProjectCards() {
     },
   ];
 
+  // Filter projects based on search text, selected types, and selected statuses
+  const filteredProjects = projects.filter(project => {
+    // Search filter
+    const searchMatch = searchText === "" || 
+      project.title.toLowerCase().includes(searchText.toLowerCase()) ||
+      project.client.toLowerCase().includes(searchText.toLowerCase()) ||
+      project.type.toLowerCase().includes(searchText.toLowerCase());
+
+    // Type filter
+    const typeMatch = selectedTypes.length === 0 || 
+      selectedTypes.includes(project.type.toLowerCase());
+
+    // Status filter
+    const statusMatch = selectedStatuses.length === 0 || 
+      selectedStatuses.includes(project.stage.toLowerCase());
+
+    return searchMatch && typeMatch && statusMatch;
+  });
+
   const getColorClass = (color: string) => {
     switch(color) {
       case 'blue': return 'border-l-blue-500';
@@ -134,78 +178,93 @@ export default function ProjectCards() {
     <div className="mt-6 mx-5">
       <div className="flex justify-between items-center mb-4">
         <h3 className="text-lg font-semibold text-gray-900">Projects</h3>
-        <span className="text-sm text-gray-500">Showing {projects.length} projects</span>
+        <span className="text-sm text-gray-500">
+          Showing {filteredProjects.length} of {projects.length} projects
+          {(searchText || selectedTypes.length > 0 || selectedStatuses.length > 0) && 
+            " (filtered)"}
+        </span>
       </div>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {projects.map((project) => (
-          <Card
-            key={project.id}
-            className={`rounded-lg border border-gray-200 hover:shadow-md transition-shadow ${getColorClass(project.color)} border-l-4`}
-            bodyStyle={{ padding: '20px' }}
-          >
-            {/* Project Title & Client */}
-            <div className="mb-4">
-              <h4 className="text-lg font-bold text-gray-900 mb-1">{project.title}</h4>
-              <p className="text-gray-500 text-sm">{project.client}</p>
-            </div>
-
-            {/* Project Type and Stage Tags */}
-            <div className="flex gap-2 mb-4">
-              <span className={`text-xs font-medium px-2 py-1 rounded ${getTypeColor(project.type)}`}>
-                {project.type}
-              </span>
-              <span className={`text-xs font-medium px-2 py-1 rounded ${getStageColor(project.stage)}`}>
-                {project.stage}
-              </span>
-            </div>
-
-            {/* Progress Bar */}
-            <div className="mb-5">
-              <div className="flex justify-between items-center mb-2">
-                <span className="text-sm font-medium text-gray-700">Progress</span>
-                <span className="text-sm font-bold text-gray-900">{project.progress}%</span>
+      {filteredProjects.length === 0 ? (
+        <Empty
+          description={
+            <span className="text-gray-500">
+              No projects match your filters
+            </span>
+          }
+          className="py-12"
+        />
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {filteredProjects.map((project) => (
+            <Card
+              key={project.id}
+              className={`rounded-lg border border-gray-200 hover:shadow-md transition-shadow ${getColorClass(project.color)} border-l-4`}
+              bodyStyle={{ padding: '20px' }}
+            >
+              {/* Project Title & Client */}
+              <div className="mb-4">
+                <h4 className="text-lg font-bold text-gray-900 mb-1">{project.title}</h4>
+                <p className="text-gray-500 text-sm">{project.client}</p>
               </div>
-              <Progress 
-                percent={project.progress} 
-                showInfo={false}
-                strokeColor="#3b82f6" 
-                className="mb-1"
-              />
-            </div>
 
-            {/* Stats */}
-            <div className="flex flex-wrap gap-3 mb-5">
-              <div className="flex items-center text-gray-600">
-                <TeamOutlined className="mr-2 text-gray-400" />
-                <span className="text-sm">{project.members} members</span>
+              {/* Project Type and Stage Tags */}
+              <div className="flex gap-2 mb-4">
+                <span className={`text-xs font-medium px-2 py-1 rounded ${getTypeColor(project.type)}`}>
+                  {project.type}
+                </span>
+                <span className={`text-xs font-medium px-2 py-1 rounded ${getStageColor(project.stage)}`}>
+                  {project.stage}
+                </span>
               </div>
-              <div className="flex items-center text-gray-600">
-                <ClockCircleOutlined className="mr-2 text-gray-400" />
-                <span className="text-sm">{project.hoursAllocated}h allocated</span>
-              </div>
-              <div className="flex items-center text-red-600">
-                <ExclamationCircleOutlined className="mr-2 text-red-400" />
-                <span className="text-sm font-medium">{project.issues} issues</span>
-              </div>
-            </div>
 
-            {/* Timeline */}
-            <div className="pt-4 border-t border-gray-100">
-              <div className="flex justify-between text-gray-600 text-sm">
-                <div className="flex items-center">
-                  <CalendarOutlined className="mr-2 text-gray-400" />
-                  <span>Start: {project.startDate}</span>
+              {/* Progress Bar */}
+              <div className="mb-5">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-sm font-medium text-gray-700">Progress</span>
+                  <span className="text-sm font-bold text-gray-900">{project.progress}%</span>
                 </div>
-                <div className="flex items-center">
-                  <CalendarOutlined className="mr-2 text-gray-400" />
-                  <span>End: {project.endDate}</span>
+                <Progress 
+                  percent={project.progress} 
+                  showInfo={false}
+                  strokeColor="#3b82f6"
+                  className="mb-1"
+                />
+              </div>
+
+              {/* Stats */}
+              <div className="flex flex-wrap gap-3 mb-5">
+                <div className="flex items-center text-gray-600">
+                  <TeamOutlined className="mr-2 text-gray-400" />
+                  <span className="text-sm">{project.members} members</span>
+                </div>
+                <div className="flex items-center text-gray-600">
+                  <ClockCircleOutlined className="mr-2 text-gray-400" />
+                  <span className="text-sm">{project.hoursAllocated}h allocated</span>
+                </div>
+                <div className="flex items-center text-red-600">
+                  <ExclamationCircleOutlined className="mr-2 text-red-400" />
+                  <span className="text-sm font-medium">{project.issues} issues</span>
                 </div>
               </div>
-            </div>
-          </Card>
-        ))}
-      </div>
+
+              {/* Timeline */}
+              <div className="pt-4 border-t border-gray-100">
+                <div className="flex justify-between text-gray-600 text-sm">
+                  <div className="flex items-center">
+                    <CalendarOutlined className="mr-2 text-gray-400" />
+                    <span>Start: {project.startDate}</span>
+                  </div>
+                  <div className="flex items-center">
+                    <CalendarOutlined className="mr-2 text-gray-400" />
+                    <span>End: {project.endDate}</span>
+                  </div>
+                </div>
+              </div>
+            </Card>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
