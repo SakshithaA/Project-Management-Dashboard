@@ -11,6 +11,20 @@ export default function Navbar() {
   const navigate = useNavigate();
   const location = useLocation();
 
+  // Check if current path is a form page (where navbar should be hidden)
+  const isFormPage = () => {
+    const path = location.pathname;
+    return path.includes('addproject') || 
+           path.includes('addpoc') || 
+           path.includes('report') ||
+           path.includes('forms/');
+  };
+
+  // If on form page, don't render navbar
+  if (isFormPage()) {
+    return null;
+  }
+
   // Get active key from current path
   const getActiveKey = () => {
     const path = location.pathname;
@@ -62,8 +76,8 @@ export default function Navbar() {
           </p>
         </div>
 
-        {/* Buttons Section */}
-        <div className="flex flex-wrap gap-4 ">
+        {/* Buttons Section - ALL THREE BUTTONS ALWAYS VISIBLE */}
+        <div className="flex flex-wrap gap-4">
           <Button
             icon={<PlusOutlined />}
             className="h-8 px-4 border border-gray-300 bg-white hover:bg-gray-50 text-gray-700 hover:text-gray-900 hover:border-gray-400 transition-all duration-150 flex items-center gap-2 font-normal"
@@ -71,6 +85,7 @@ export default function Navbar() {
           >
             Add Project
           </Button>
+          
           <Button
             icon={<PlusOutlined />}
             className="h-8 px-4 border border-gray-300 bg-white hover:bg-gray-50 text-gray-700 hover:text-gray-900 hover:border-gray-400 transition-all duration-150 flex items-center gap-2 font-normal"
@@ -78,6 +93,7 @@ export default function Navbar() {
           >
             Add POC
           </Button>
+          
           <Button
             icon={<FileTextOutlined />}
             className="h-8 px-4 border border-gray-300 bg-white hover:bg-gray-50 text-gray-700 hover:text-gray-900 hover:border-gray-400 transition-all duration-150 flex items-center gap-2 font-normal"

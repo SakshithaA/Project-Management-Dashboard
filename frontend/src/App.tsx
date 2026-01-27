@@ -3,6 +3,8 @@ import Navbar from './components/Navbar'
 import Home from './pages/Home'
 import Analytics from './pages/Analytics'
 import POCCards from './pages/POCs'
+import AddProject from './pages/forms/AddProject'
+import AddPOC from './pages/forms/AddPOC'
 import './App.css'
 
 export default function App() {
@@ -16,6 +18,8 @@ export default function App() {
             <Route path="/overview" element={<Home />} />
             <Route path="/analytics" element={<Analytics />} />
             <Route path="/pocs" element={<POCCards />} />
+            <Route path="/addproject" element={<AddProject />}/>
+            <Route path="/addpoc" element={<AddPOC />}/>
           </Routes>
         </div>
       </div>
