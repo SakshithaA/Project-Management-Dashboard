@@ -248,7 +248,7 @@ export default function Analytics() {
   );
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4">
+    <div className="min-h-screen bg-gray-50 p-10">
       <div className="mb-6">
         <h1 className="text-xl font-bold text-gray-900">Analytics Overview</h1>
         <p className="text-gray-500 mt-1 text-xs">

@@ -12,7 +12,7 @@ export default function App() {
     <Router>
       <div className="bg-gray-50 min-h-screen">
         <Navbar />
-        <div className="px-4 py-4">
+        <div className="px-0 py-0">
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/overview" element={<Home />} />

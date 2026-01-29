@@ -52,7 +52,7 @@ export default function Home() {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50 margin ">    
+    <div className="min-h-screen p-9 bg-gray-50 margin ">    
       {/* Stats Cards for Overview */}
       <StatsCards stats={overviewStats} />
       

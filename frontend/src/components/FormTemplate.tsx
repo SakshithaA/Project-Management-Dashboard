@@ -47,9 +47,9 @@ export default function FormTemplate({
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 m-0">
       {/* Navbar-like Back Bar */}
-      <div className="bg-white border-b border-gray-200 px-7 py-4">
+      <div className="bg-white border-b border-gray-200 px-0 py-4 m-0">
         <div className="max-w-4xl mx-auto">
           <Button 
             type="text"
