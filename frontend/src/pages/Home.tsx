@@ -6,7 +6,7 @@ import {
 } from "@ant-design/icons";
 import { useState } from "react";
 import StatsCards from "../components/StatsCards";
-import ProjectCards from "../components/projectcard";
+import ProjectCards from "../components/project/projectcard";
 import Filter from "../components/Filter";
 
 export default function Home() {

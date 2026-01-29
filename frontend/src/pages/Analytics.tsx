@@ -11,7 +11,7 @@ import {
 } from 'recharts';
 import { Card } from 'antd';
 import StatsCards from "../components/StatsCards";
-import { projects, getStageColorHex, getTypeColorHex } from "../components/projectcard";
+import { projects, getStageColorHex, getTypeColorHex } from "../components/project/projectcard";
 
 export default function Analytics() {
   const totalProjects = projects.length;
