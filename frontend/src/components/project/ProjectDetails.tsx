@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, Progress, Tag, Avatar, Button, Divider, Tabs } from "antd";
 import { 
   ArrowLeftOutlined,
@@ -12,240 +12,49 @@ import {
 import { getTypeColor, getStageColor } from "./projectcard";
 import type { Project } from "./projectcard";
 import { useNavigate } from "react-router-dom";
-
+import { api } from "../../services/api";
+import type { TeamMember, Issue} from "../../services/api";
 const { TabPane } = Tabs;
 
-interface TeamMember {
-  id: number;
-  name: string;
-  role: string;
-  hoursAllocated: number;
-  avatarColor: string;
-  jobTitle?: string;
-  email?: string;
-  department?: string;
-  workload?: number;
-  activeProjects?: number;
-  activePOCs?: number;
-  certifications?: number;
-  tasks?: Array<{
-    id: number;
-    title: string;
-    status: string;
-    dueDate?: string;
-    priority?: 'low' | 'medium' | 'high';
-  }>;
-  interns?: Array<{
-    id: number;
-    name: string;
-    studyTrack: string;
-    university: string;
-    duration: string;
-    skills: string[];
-    progress: number;
-    certifications: string[];
-    nextReview: string;
-  }>;
-  hasInterns?: boolean;
-}
-
 interface ProjectDetailProps {
-  project: Project;
-  projectDescription?: string;
-  teamMembers?: TeamMember[];
-  issues?: Array<{
-    id: number;
-    title: string;
-    description: string;
-    status: string;
-    reporter: string;
-    reportedDate: string;
-    priority?: 'low' | 'medium' | 'high' | 'critical';
-  }>;
+  projectId: number;
 }
 
-export default function ProjectDetail({ 
-  project, 
-  projectDescription = "Project description not available",
-  teamMembers = [],
-  issues = []
-}: ProjectDetailProps) {
+export default function ProjectDetail({ projectId }: ProjectDetailProps) {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("team");
+  const [project, setProject] = useState<Project | null>(null);
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
+  const [issues, setIssues] = useState<Issue[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // Default team members if not provided - WITH DIFFERENT DATA FOR EACH
-  const defaultTeamMembers: TeamMember[] = teamMembers.length > 0 ? teamMembers : [
-    { 
-      id: 1, 
-      name: "Sarah Johnson", 
-      role: "Lead Developer", 
-      hoursAllocated: 320,
-      avatarColor: "#3b82f6",
-      jobTitle: "Lead Developer & Mentor",
-      email: "sarah.johnson@company.com",
-      department: "Full Stack Development",
-      workload: 85,
-      activeProjects: 2,
-      activePOCs: 1,
-      certifications: 4,
-      hasInterns: true,
-      interns: [
-        {
-          id: 101,
-          name: "Alex Johnson",
-          studyTrack: "Computer Science - Full Stack",
-          university: "Tech University",
-          duration: "6 months internship",
-          skills: ["React", "Node.js", "MongoDB", "Express"],
-          progress: 80,
-          certifications: ["MERN Stack Certification", "AWS Fundamentals"],
-          nextReview: "2024-04-20"
-        },
-        {
-          id: 102,
-          name: "Emma Davis",
-          studyTrack: "Software Engineering",
-          university: "State University",
-          duration: "4 months internship",
-          skills: ["Python", "Django", "PostgreSQL", "Docker"],
-          progress: 65,
-          certifications: ["Python Developer Certificate"],
-          nextReview: "2024-04-25"
-        }
-      ],
-      tasks: [
-        {
-          id: 1,
-          title: "Architecture review for payment module",
-          status: "in-progress",
-          dueDate: "2024-04-05",
-          priority: "high"
-        }
-      ]
-    },
-    { 
-      id: 2, 
-      name: "Mike Chen", 
-      role: "Frontend Developer", 
-      hoursAllocated: 280,
-      avatarColor: "#10b981",
-      jobTitle: "Senior Frontend Developer",
-      email: "mike.chen@company.com",
-      department: "Frontend Team",
-      workload: 70,
-      activeProjects: 1,
-      activePOCs: 0,
-      certifications: 2,
-      hasInterns: false,
-      tasks: [
-        {
-          id: 2,
-          title: "Optimize checkout page performance",
-          status: "in-progress",
-          dueDate: "2024-03-30",
-          priority: "medium"
-        }
-      ]
-    },
-    { 
-      id: 3, 
-      name: "Emily Davis", 
-      role: "Backend Developer", 
-      hoursAllocated: 290,
-      avatarColor: "#8b5cf6",
-      jobTitle: "Backend Developer",
-      email: "emily.davis@company.com",
-      department: "Backend Services",
-      workload: 75,
-      activeProjects: 2,
-      activePOCs: 1,
-      certifications: 3,
-      hasInterns: false,
-      tasks: [
-        {
-          id: 3,
-          title: "Database optimization for user analytics",
-          status: "pending",
-          dueDate: "2024-04-10",
-          priority: "high"
-        }
-      ]
-    },
-    { 
-      id: 4, 
-      name: "James Wilson", 
-      role: "Mobile Lead", 
-      hoursAllocated: 420,
-      avatarColor: "#f59e0b",
-      jobTitle: "Mobile Lead & Learning Catalyst",
-      email: "james.wilson@company.com",
-      department: "Mobile Development",
-      workload: 95,
-      activeProjects: 1,
-      activePOCs: 2,
-      certifications: 3,
-      hasInterns: true,
-      interns: [
-        {
-          id: 103,
-          name: "David Brown",
-          studyTrack: "Computer Science - Mobile Development",
-          university: "Tech University",
-          duration: "8 months internship",
-          skills: ["React Native", "iOS", "Android", "Firebase"],
-          progress: 90,
-          certifications: ["React Native Certification", "Mobile Security"],
-          nextReview: "2024-04-15"
-        },
-        {
-          id: 104,
-          name: "Sophia Garcia",
-          studyTrack: "Mobile App Development",
-          university: "Digital Arts College",
-          duration: "6 months internship",
-          skills: ["Flutter", "Dart", "Firebase", "UI/UX"],
-          progress: 75,
-          certifications: ["Flutter Developer Certificate"],
-          nextReview: "2024-04-18"
-        }
-      ],
-      tasks: [
-        {
-          id: 4,
-          title: "Mobile app security audit",
-          status: "completed",
-          dueDate: "2024-03-25",
-          priority: "high"
-        }
-      ]
+  useEffect(() => {
+    fetchProjectData();
+  }, [projectId]);
+
+  const fetchProjectData = async () => {
+    try {
+      setLoading(true);
+      const [projectData, teamData, issuesData] = await Promise.all([
+        api.getProject(projectId),
+        api.getTeamMembers(projectId),
+        api.getIssues(projectId)
+      ]);
+      
+      setProject(projectData);
+      setTeamMembers(teamData);
+      setIssues(issuesData);
+    } catch (error) {
+      console.error('Error fetching project data:', error);
+    } finally {
+      setLoading(false);
     }
-  ];
-
-  // Default issues if not provided
-  const defaultIssues = issues.length > 0 ? issues : 
-    project.issues > 0 ? [
-      {
-        id: 1,
-        title: "Payment gateway integration delay",
-        description: "Third-party API documentation incomplete",
-        status: "in-progress",
-        reporter: "Sarah Johnson",
-        reportedDate: "10/3/2024",
-        priority: "high"
-      },
-      ...(project.issues > 1 ? [{
-        id: 2,
-        title: "Mobile responsive issues on checkout",
-        description: "Layout breaks on smaller screens",
-        status: "resolved",
-        reporter: "Mike Chen",
-        reportedDate: "28/2/2024",
-        priority: "medium"
-      }] : [])
-    ] : [];
+  };
 
   // Calculate timeline progress
   const calculateTimelineProgress = () => {
+    if (!project) return 50;
+    
     try {
       const startDate = new Date(project.startDate.split('/').reverse().join('-'));
       const endDate = new Date(project.endDate.split('/').reverse().join('-'));
@@ -260,7 +69,7 @@ export default function ProjectDetail({
       const progress = Math.min(100, Math.round((elapsedDuration / totalDuration) * 100));
       return progress;
     } catch (error) {
-      return 50; // Default progress if date parsing fails
+      return 50;
     }
   };
 
@@ -268,6 +77,8 @@ export default function ProjectDetail({
 
   // Calculate days remaining
   const calculateDaysRemaining = () => {
+    if (!project) return "Date calculation error";
+    
     try {
       const endDate = new Date(project.endDate.split('/').reverse().join('-'));
       const today = new Date();
@@ -279,25 +90,28 @@ export default function ProjectDetail({
     }
   };
 
-  // Handle team member click - navigate to member page
+  // Handle team member click
   const handleMemberClick = (member: TeamMember) => {
-    // Navigate to member detail page with member data
     navigate(`/team-member/${member.id}`, { 
       state: { 
         member,
-        projectTitle: project.title,
-        projectId: project.id
+        projectTitle: project?.title,
+        projectId: project?.id
       }
     });
   };
 
   // Render content based on active tab
   const renderTabContent = () => {
+    if (loading) {
+      return <div>Loading...</div>;
+    }
+
     switch(activeTab) {
       case "team":
         return (
           <div className="space-y-4">
-            {defaultTeamMembers.map((member) => (
+            {teamMembers.map((member) => (
               <div 
                 key={member.id} 
                 className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition-colors cursor-pointer border border-gray-200 hover:border-blue-300"
@@ -314,7 +128,6 @@ export default function ProjectDetail({
                   <div className="ml-5">
                     <div className="font-medium text-gray-900">{member.name}</div>
                     <div className="text-sm text-gray-500">{member.role}</div>
-                    
                   </div>
                 </div>
                 <div className="text-right">
@@ -329,8 +142,8 @@ export default function ProjectDetail({
       case "issues":
         return (
           <div className="space-y-3">
-            {defaultIssues.length > 0 ? (
-              defaultIssues.map((issue) => (
+            {issues.length > 0 ? (
+              issues.map((issue) => (
                 <div key={issue.id} className="p-3 bg-red-50 border border-red-200 rounded-lg">
                   <div className="flex items-start">
                     <ExclamationCircleOutlined className="text-red-500 mt-1 mr-3" />
@@ -372,6 +185,8 @@ export default function ProjectDetail({
         );
       
       case "overview":
+        if (!project) return null;
+        
         return (
           <div className="space-y-3">
             <div className="flex items-center justify-between">
@@ -395,7 +210,7 @@ export default function ProjectDetail({
                 <ExclamationCircleOutlined className="text-gray-400 mr-2" />
                 <span className="text-sm text-gray-600">Open Issues</span>
               </div>
-              <span className="font-medium">{defaultIssues.length}</span>
+              <span className="font-medium">{issues.length}</span>
             </div>
             <Divider className="my-2" />
             <div className="flex items-center justify-between">
@@ -425,6 +240,14 @@ export default function ProjectDetail({
     }
   };
 
+  if (loading || !project) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-6">
+        <div className="text-center py-12">Loading...</div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 ">
       {/* Navbar-like Back Bar */}
@@ -450,7 +273,7 @@ export default function ProjectDetail({
             <p className="text-gray-500 text-lg">{project.client}</p>
           </div>
 
-          <div className=" lg:grid-cols-3 gap-6">
+          <div className="lg:grid-cols-3 gap-6">
             {/* Left Column - Project Info */}
             <div className="lg:col-span-2 space-y-6">
               {/* Project Tags */}
@@ -465,7 +288,7 @@ export default function ProjectDetail({
 
               {/* Project Description */}
               <Card className="border border-gray-200 rounded-lg">
-                <p className="text-gray-700 text-sm align-center">{projectDescription}</p>
+                <p className="text-gray-700 text-sm align-center">{project.description || "Project description not available"}</p>
               </Card>
 
               {/* Progress Stats Boxes */}
@@ -558,7 +381,7 @@ export default function ProjectDetail({
                         <span className="flex items-center gap-2">
                           <TeamOutlined />
                           <span>Team Members</span>
-                          <Tag className="ml-1">{defaultTeamMembers.length}</Tag>
+                          <Tag className="ml-1">{teamMembers.length}</Tag>
                         </span>
                       } 
                       key="team"
@@ -568,7 +391,7 @@ export default function ProjectDetail({
                         <span className="flex items-center gap-2">
                           <ExclamationCircleOutlined />
                           <span>Issues</span>
-                          <Tag className="ml-1">{defaultIssues.length}</Tag>
+                          <Tag className="ml-1">{issues.length}</Tag>
                         </span>
                       } 
                       key="issues"

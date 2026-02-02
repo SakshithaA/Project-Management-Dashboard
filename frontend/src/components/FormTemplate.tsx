@@ -21,6 +21,7 @@ interface FormTemplateProps {
   }>;
   extraActions?: ReactNode;
   initialValues?: any;
+  submitDisabled?: boolean;
 }
 
 export default function FormTemplate({
@@ -34,7 +35,8 @@ export default function FormTemplate({
   form,
   sections,
   extraActions,
-  initialValues
+  initialValues,
+  submitDisabled = false
 }: FormTemplateProps) {
   const navigate = useNavigate();
 
@@ -116,6 +118,7 @@ export default function FormTemplate({
                 htmlType="submit"
                 size="large"
                 className="px-8 rounded-lg"
+                disabled={submitDisabled}
               >
                 {submitText}
               </Button>

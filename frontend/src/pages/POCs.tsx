@@ -1,87 +1,29 @@
+import { useState, useEffect } from "react";
 import { Card, Button, Typography } from "antd";
 import { 
   ExperimentOutlined,
   CodeOutlined,
   PlusOutlined,
   ClockCircleOutlined,
-  RocketOutlined
 } from "@ant-design/icons";
-
+import { api } from "../services/api";
+import type { POC } from "../services/api";
+import { useNavigate } from "react-router-dom";
 const { Title, Text } = Typography;
 
-export interface POC {
+export interface POCType {
   id: number;
   title: string;
   overview: string;
   technologies: string[];
   postedDate: string;
+  createdBy?: number;
+  status?: string;
 }
 
 interface POCCardProps {
   searchText?: string;
 }
-
-
-//export const pocs: POC[] = [];
-
-export const pocs: POC[] = [
-  {
-    id: 1,
-    title: "Microservices Architecture with gRPC",
-    overview: "Create a proof of concept to explore new technologies and validate ideas for distributed systems communication using gRPC protocol",
-    technologies: ["React", "Node.js", "PostgreSQL", "gRPC", "Docker", "Kubernetes"],
-    postedDate: "2 days ago"
-  },
-  {
-    id: 2,
-    title: "AI-Powered Code Review System",
-    overview: "Implement AI-based code analysis for automated reviews and bug detection",
-    technologies: ["Python", "FastAPI", "OpenAI API", "Docker", "GitHub Actions"],
-    postedDate: "1 week ago"
-  },
-  {
-    id: 3,
-    title: "Real-time Dashboard with WebSockets",
-    overview: "Build real-time monitoring dashboard using WebSocket protocol for live data streaming",
-    technologies: ["Vue.js", "Node.js", "Socket.io", "Redis", "MongoDB"],
-    postedDate: "3 days ago"
-  },
-  {
-    id: 4,
-    title: "Serverless API Optimization",
-    overview: "Optimize serverless functions for better performance and cost efficiency",
-    technologies: ["AWS Lambda", "TypeScript", "API Gateway", "DynamoDB"],
-    postedDate: "Just now"
-  },
-  {
-    id: 5,
-    title: "Mobile App Analytics Pipeline",
-    overview: "Build analytics pipeline for mobile application data processing and visualization",
-    technologies: ["Flutter", "Firebase", "BigQuery", "Python", "Data Studio"],
-    postedDate: "2 weeks ago"
-  },
-  {
-    id: 6,
-    title: "Blockchain Integration Test",
-    overview: "Test integration with blockchain networks for secure transactions",
-    technologies: ["Solidity", "Web3.js", "Ethereum", "Node.js", "Truffle"],
-    postedDate: "5 days ago"
-  },
-  {
-    id: 7,
-    title: "Machine Learning Model Deployment",
-    overview: "Deploy ML models with scalable infrastructure and monitoring",
-    technologies: ["Python", "TensorFlow", "Docker", "Kubernetes", "Grafana"],
-    postedDate: "4 days ago"
-  },
-  {
-    id: 8,
-    title: "Progressive Web App (PWA) Implementation",
-    overview: "Convert existing web app to PWA for offline capabilities and mobile experience",
-    technologies: ["React", "Service Workers", "IndexedDB", "Web App Manifest"],
-    postedDate: "1 week ago"
-  }
-];
 
 const getTechColor = (tech: string) => {
   const techLower = tech.toLowerCase();
@@ -109,6 +51,26 @@ const getTechColor = (tech: string) => {
 export default function POCCardsWithData({ 
   searchText = "" 
 }: POCCardProps) {
+  const [pocs, setPOCs] = useState<POC[]>([]);
+  const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
+  
+  useEffect(() => {
+    fetchPOCs();
+  }, []);
+
+  const fetchPOCs = async () => {
+    try {
+      setLoading(true);
+      const data = await api.getPOCs();
+      setPOCs(data);
+    } catch (error) {
+      console.error('Error fetching POCs:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const filteredPOCs = pocs.filter(poc => {
     const searchMatch = searchText === "" || 
       poc.title.toLowerCase().includes(searchText.toLowerCase()) ||
@@ -116,6 +78,18 @@ export default function POCCardsWithData({
       poc.technologies.some(tech => tech.toLowerCase().includes(searchText.toLowerCase()));
     return searchMatch;
   });
+
+  if (loading) {
+    return (
+      <div className="mt-8 mx-10">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {[1, 2, 3, 4, 5, 6].map((i) => (
+            <Card key={i} loading className="rounded-lg h-64" />
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="mt-8 mx-10">
@@ -131,7 +105,7 @@ export default function POCCardsWithData({
         </div>
         {/* Show Create POC button only when there are POCs */}
         {filteredPOCs.length > 0 && (
-          <Button type="primary" icon={<PlusOutlined />}>
+          <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/add-poc')}>
             Create POC
           </Button>
         )}
@@ -209,11 +183,23 @@ export default function POCCardsWithData({
                 </div>
               </div>
 
-              {/* Posted Date */}
+              {/* Status and Date */}
               <div className="pt-4 border-t border-gray-100">
-                <div className="flex items-center text-gray-500 text-sm">
-                  <ClockCircleOutlined className="mr-2 text-gray-400" />
-                  <span>Posted {poc.postedDate}</span>
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center text-gray-500 text-sm">
+                    <ClockCircleOutlined className="mr-2 text-gray-400" />
+                    <span>Posted {poc.postedDate}</span>
+                  </div>
+                  {poc.status && (
+                    <span className={`text-xs px-2 py-1 rounded ${
+                      poc.status === 'completed' ? 'bg-green-100 text-green-700' :
+                      poc.status === 'in-progress' ? 'bg-blue-100 text-blue-700' :
+                      poc.status === 'testing' ? 'bg-yellow-100 text-yellow-700' :
+                      'bg-gray-100 text-gray-700'
+                    }`}>
+                      {poc.status}
+                    </span>
+                  )}
                 </div>
               </div>
             </Card>

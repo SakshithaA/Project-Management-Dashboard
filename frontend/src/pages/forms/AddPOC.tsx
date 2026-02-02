@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Form, Input, Select, DatePicker, Button, InputNumber } from "antd";
 import { PlusOutlined, UserOutlined, MailOutlined } from "@ant-design/icons";
@@ -20,6 +20,9 @@ export default function AddPOC() {
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([
     { id: 1, name: "", email: "", role: "" }
   ]);
+  
+  // Add state for form validity
+  const [isFormValid, setIsFormValid] = useState(false);
 
   const pocStatuses = [
     "Planning",
@@ -28,6 +31,29 @@ export default function AddPOC() {
     "Completed",
     "Cancelled"
   ];
+
+  // Check form validity whenever form values or team members change
+  useEffect(() => {
+    const checkFormValidity = async () => {
+      try {
+        // Validate all form fields
+        await form.validateFields();
+        
+        // Check if all team members have required fields filled
+        const hasEmptyTeamMembers = teamMembers.some(member => 
+          !member.name.trim() || !member.email.trim() || !member.role.trim()
+        );
+        
+        // Set form validity based on both form fields and team members
+        setIsFormValid(!hasEmptyTeamMembers);
+      } catch (error) {
+        // If form validation fails, form is invalid
+        setIsFormValid(false);
+      }
+    };
+
+    checkFormValidity();
+  }, [form, teamMembers]);
 
   const handleAddTeamMember = () => {
     setTeamMembers([...teamMembers, {
@@ -51,11 +77,12 @@ export default function AddPOC() {
   };
 
   const handleSubmit = (values: any) => {
+    if (!isFormValid) return;
+    
     console.log("POC data:", { 
       ...values, 
       teamMembers 
     });
-    // API call would go here
     navigate("/pocs");
   };
 
@@ -152,7 +179,7 @@ export default function AddPOC() {
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Name
+                Name *
               </label>
               <Input
                 placeholder="John Smith"
@@ -160,12 +187,13 @@ export default function AddPOC() {
                 onChange={(e) => handleTeamMemberChange(member.id, 'name', e.target.value)}
                 className="rounded-lg"
                 size="large"
+                required
               />
             </div>
             
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Email
+                Email *
               </label>
               <Input
                 placeholder="john.smith@company.com"
@@ -174,12 +202,13 @@ export default function AddPOC() {
                 className="rounded-lg"
                 size="large"
                 prefix={<MailOutlined className="text-gray-400" />}
+                required
               />
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Role
+                Role *
               </label>
               <Input
                 placeholder="Technical Lead"
@@ -187,6 +216,7 @@ export default function AddPOC() {
                 onChange={(e) => handleTeamMemberChange(member.id, 'role', e.target.value)}
                 className="rounded-lg"
                 size="large"
+                required
               />
             </div>
           </div>
@@ -300,6 +330,7 @@ export default function AddPOC() {
       subtitle="Create a proof of concept to explore new technologies and validate ideas"
       submitText="Create POC"
       cancelText="Cancel"
+      submitDisabled={!isFormValid}
       onFinish={handleSubmit}
       form={form}
       sections={sections}

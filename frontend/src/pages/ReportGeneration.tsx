@@ -1,40 +1,49 @@
+// pages/ReportGenerate.tsx
 import { useState, useEffect } from "react";
-import { Checkbox, Select, Button, Card, Row, Col, Divider } from "antd";
+import { ArrowLeftOutlined } from "@ant-design/icons";
+import { useNavigate } from "react-router-dom";
+import { Checkbox, Select, Button, Card, Row, Col } from "antd";
 import { DownloadOutlined } from "@ant-design/icons";
-import { projects } from "../components/project/projectcard";
-import type {Project} from "../components/project/projectcard";
+import { api } from "../services/api";
+import type { Project } from "../components/project/projectcard";
 
 const { Option } = Select;
 
 // Extended project interface
 interface ExtendedProject extends Project {
   budget: number;
-  selected: boolean; // Add selected field
+  selected: boolean;
 }
-
-// Sample project budgets (in thousands) - matching your image
-const projectBudgets: Record<string, number> = {
-  "E-commerce Platform Rebuild": 120,
-  "Data Pipeline Migration": 85,
-  "Cloud Infrastructure Setup": 60,
-  "Mobile Banking App": 95,
-};
 
 export default function ReportGenerate() {
   const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
   const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
   const [extendedProjects, setExtendedProjects] = useState<ExtendedProject[]>([]);
   const [selectAll, setSelectAll] = useState<boolean>(false);
-
+  const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
+  const backPath = "/";
   // Initialize with extended project data
   useEffect(() => {
-    const initialProjects: ExtendedProject[] = projects.map(project => ({
-      ...project,
-      budget: projectBudgets[project.title] || 50,
-      selected: true // Default to selected
-    }));
-    setExtendedProjects(initialProjects);
+    fetchProjects();
   }, []);
+
+  const fetchProjects = async () => {
+    try {
+      setLoading(true);
+      const projects = await api.getProjects();
+      const initialProjects: ExtendedProject[] = projects.map(project => ({
+        ...project,
+        budget: project.budget || 50,
+        selected: true
+      }));
+      setExtendedProjects(initialProjects);
+    } catch (error) {
+      console.error('Error fetching projects:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Filter projects based on selected types and statuses
   const filteredProjects = extendedProjects.filter(project => {
@@ -51,15 +60,15 @@ export default function ReportGenerate() {
   const selectedAndFilteredProjects = filteredProjects.filter(project => project.selected);
   
   const totalProjects = selectedAndFilteredProjects.length;
-  const totalBudget = selectedAndFilteredProjects.reduce((sum, project) => sum + project.budget, 0);
+  const totalBudget = selectedAndFilteredProjects.reduce((sum, project) => sum + (project.budget || 0), 0);
   const totalTeamMembers = selectedAndFilteredProjects.reduce((sum, project) => sum + project.members, 0);
   const totalHours = selectedAndFilteredProjects.reduce((sum, project) => sum + project.hoursAllocated, 0);
   const totalIssues = selectedAndFilteredProjects.reduce((sum, project) => sum + project.issues, 0);
 
   // Toggle individual project selection
-  const handleProjectSelect = (projectId: string) => {
+  const handleProjectSelect = (projectId: number) => {
     setExtendedProjects(prev => 
-      prev.map(project => 
+      prev.map(project =>   
         project.id === projectId 
           ? { ...project, selected: !project.selected }
           : project
@@ -150,9 +159,32 @@ END OF REPORT`;
     URL.revokeObjectURL(url);
   };
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-white p-6">
+        <div className="max-w-6xl mx-auto">
+          <div className="h-96 bg-gray-200 animate-pulse rounded-lg" />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-white p-6">
-      <div className="max-w-6xl mx-auto">
+      {/* Navbar-like Back Bar */}
+      <div className="bg-white border-b border-gray-200 px-0 py-4 m-0">
+        <div className="max-w-4xl mx-auto">
+          <Button 
+            type="text"
+            icon={<ArrowLeftOutlined />}
+            onClick={() => navigate(backPath)}
+            className="text-gray-600 hover:text-gray-900 hover:bg-gray-100 px-3 py-2 rounded-lg transition-colors duration-150"
+          >
+            Back to Dashboard
+          </Button>
+        </div>
+      </div>
+      <div className="max-w-4xl mx-auto mt-10">
         {/* Header with Download button */}
         <div className="flex justify-between items-center mb-8">
           <div>
@@ -220,7 +252,7 @@ END OF REPORT`;
               </div>
             </Card>
 
-            {/* Report Summary Section - BELOW the filters */}
+            {/* Report Summary Section */}
             <Card 
               title="Report Summary" 
               className="border border-gray-200"

@@ -7,8 +7,10 @@ import AddProject from './pages/forms/AddProject'
 import AddPOC from './pages/forms/AddPOC'
 import ProjectDetailPage from './pages/ProjectDetailPage';
 import ReportGenerate from './pages/ReportGeneration';
-import TeamMemberDetail from './components/TeamMemberDetail';
-import InternDetail from './components/InternDetail';
+import TeamMemberDetail from './components/employee_details/TeamMemberDetail';
+import InternDetail from './components/employee_details/InternDetail';
+import UpdateIntern from './pages/forms/UpdateIntern';
+import UpdateTeamMember from './pages/forms/UpdateTeamMember';
 import './App.css'
 
 
@@ -26,9 +28,12 @@ export default function App() {
             <Route path="/addproject" element={<AddProject />}/>
             <Route path="/addpoc" element={<AddPOC />}/>
             <Route path="/project/:id" element={<ProjectDetailPage />} />
-             <Route path="/team-member/:id" element={<TeamMemberDetail />} />
+            <Route path="/team-member/:id" element={<TeamMemberDetail />} />
             <Route path="/report" element={<ReportGenerate />} />
             <Route path="/intern/:id" element={<InternDetail />} />
+            <Route path="/add-poc" element={<AddPOC />} />
+            <Route path="/intern/:id/edit" element={<UpdateIntern />} />
+            <Route path="/team-member/:id/edit" element={<UpdateTeamMember />} />
           </Routes>
         </div>
       </div>

@@ -6,8 +6,9 @@ import {
   CalendarOutlined
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { api } from "../../services/api";
 
-// Export the interface
 export interface Project {
   id: number;
   title: string;
@@ -21,6 +22,9 @@ export interface Project {
   color: string;
   type: string;
   stage: string;
+  budget?: number;
+  description?: string;
+  teamMemberIds?: number[];
 }
 
 interface ProjectCardsProps {
@@ -28,94 +32,6 @@ interface ProjectCardsProps {
   selectedTypes?: string[];
   selectedStatuses?: string[];
 }
-
-// Export projects array
-export const projects: Project[] = [
-  {
-    id: 1,
-    title: "E-commerce Platform Rebuild",
-    client: "RetailCo Inc",
-    progress: 65,
-    members: 3,
-    hoursAllocated: 890,
-    issues: 1,
-    startDate: "15/1/2024",
-    endDate: "30/6/2024",
-    color: "blue",
-    type: "Fullstack",
-    stage: "In Progress"
-  },
-  {
-    id: 2,
-    title: "Data Pipeline Migration",
-    client: "DataTech Solutions",
-    progress: 45,
-    members: 2,
-    hoursAllocated: 430,
-    issues: 1,
-    startDate: "1/2/2024",
-    endDate: "15/5/2024",
-    color: "purple",
-    type: "Data Engineering",
-    stage: "In Progress"
-  },
-  {
-    id: 3,
-    title: "Cloud Infrastructure Setup",
-    client: "StartupXYZ",
-    progress: 30,
-    members: 2,
-    hoursAllocated: 300,
-    issues: 1,
-    startDate: "1/3/2024",
-    endDate: "30/4/2024",
-    color: "green",
-    type: "DevOps",
-    stage: "Not Started"
-  },
-  {
-    id: 4,
-    title: "Mobile App Development",
-    client: "TechMobile Inc",
-    progress: 100,
-    members: 4,
-    hoursAllocated: 1200,
-    issues: 0,
-    startDate: "1/1/2024",
-    endDate: "31/3/2024",
-    color: "indigo",
-    type: "Mobile",
-    stage: "Completed"
-  },
-  {
-    id: 5,
-    title: "API Gateway Implementation",
-    client: "FinTech Corp",
-    progress: 10,
-    members: 2,
-    hoursAllocated: 200,
-    issues: 2,
-    startDate: "1/4/2024",
-    endDate: "30/6/2024",
-    color: "orange",
-    type: "Backend",
-    stage: "On Hold"
-  },
-  {
-    id: 6,
-    title: "Dashboard Redesign",
-    client: "Analytics Ltd",
-    progress: 0,
-    members: 1,
-    hoursAllocated: 150,
-    issues: 0,
-    startDate: "15/4/2024",
-    endDate: "30/5/2024",
-    color: "cyan",
-    type: "Frontend",
-    stage: "Cancelled"
-  },
-];
 
 // Export color functions with hex values for charts
 export const getStageColor = (stage: string) => {
@@ -184,6 +100,24 @@ export default function ProjectCards({
   selectedStatuses = [] 
 }: ProjectCardsProps) {
   const navigate = useNavigate();
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchProjects();
+  }, []);
+
+  const fetchProjects = async () => {
+    try {
+      setLoading(true);
+      const data = await api.getProjects();
+      setProjects(data);
+    } catch (error) {
+      console.error('Error fetching projects:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Filter projects based on search text, selected types, and selected statuses
   const filteredProjects = projects.filter(project => {
@@ -207,6 +141,18 @@ export default function ProjectCards({
   const handleCardClick = (projectId: number) => {
     navigate(`/project/${projectId}`);
   };
+
+  if (loading) {
+    return (
+      <div className="mt-6 mx-5">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {[1, 2, 3].map((i) => (
+            <Card key={i} loading className="rounded-lg h-64" />
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="mt-6 mx-5">

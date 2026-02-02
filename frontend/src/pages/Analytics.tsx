@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { 
   TeamOutlined,
   ClockCircleOutlined,
@@ -11,9 +12,42 @@ import {
 } from 'recharts';
 import { Card } from 'antd';
 import StatsCards from "../components/StatsCards";
-import { projects, getStageColorHex, getTypeColorHex } from "../components/project/projectcard";
+import { getStageColorHex, getTypeColorHex } from "../components/project/projectcard";
+import { api } from "../services/api";
 
 export default function Analytics() {
+  const [loading, setLoading] = useState(true);
+  const [projects, setProjects] = useState<any[]>([]);
+  const [analyticsData, setAnalyticsData] = useState<any>(null);
+
+  useEffect(() => {
+    fetchAnalyticsData();
+  }, []);
+
+  const fetchAnalyticsData = async () => {
+    try {
+      setLoading(true);
+      const [projectsData, analytics] = await Promise.all([
+        api.getProjects(),
+        api.getAnalytics()
+      ]);
+      setProjects(projectsData);
+      setAnalyticsData(analytics);
+    } catch (error) {
+      console.error('Error fetching analytics data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading || !analyticsData) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-10">
+        <div className="text-center py-12">Loading analytics...</div>
+      </div>
+    );
+  }
+
   const totalProjects = projects.length;
   const totalHours = projects.reduce((sum, project) => sum + project.hoursAllocated, 0);
   const totalIssues = projects.reduce((sum, project) => sum + project.issues, 0);
@@ -41,57 +75,36 @@ export default function Analytics() {
     color: getStageColorHex(name)
   }));
 
-  const totalResolvedIssues = 12;
   const issueStatusData = [
-    { name: 'Open', value: totalIssues, color: '#ef4444' },
-    { name: 'Resolved', value: totalResolvedIssues, color: '#10b981' },
-  ];
-
-  const teamWorkloadData = [
-    { name: 'James Wilson', hours: 580 },
-    { name: 'Tom Anderson', hours: 520 },
-    { name: 'Sofia Martinez', hours: 490 },
-    { name: 'Sarah Johnson', hours: 450 },
-    { name: 'Emily Davis', hours: 420 },
-    { name: 'Mike Chen', hours: 380 },
-    { name: 'David Kumar', hours: 350 },
-    { name: 'Lisa Wong', hours: 320 },
-    { name: 'Nina Patel', hours: 290 },
-    { name: 'Alex Thompson', hours: 260 },
-  ];
-
-  const projectTimelineData = [
-    { month: 'Nov 2023', projects: 0 },
-    { month: 'Jan 2024', projects: 2 },
-    { month: 'Feb 2024', projects: 2 },
-    { month: 'Mar 2024', projects: 1 },
+    { name: 'Open', value: analyticsData.openIssues, color: '#ef4444' },
+    { name: 'Resolved', value: analyticsData.resolvedIssues, color: '#10b981' },
   ];
 
   const analyticsStats = [
     {
       title: "Total Team Members",
-      value: 10,
+      value: analyticsData.totalTeamMembers,
       icon: <TeamOutlined />,
       color: "text-blue-600",
       bgColor: "bg-blue-50",
     },
     {
       title: "Total Hours",
-      value: `${totalHours}h`,
+      value: `${analyticsData.totalHours}h`,
       icon: <ClockCircleOutlined />,
       color: "text-purple-600",
       bgColor: "bg-purple-50",
     },
     {
       title: "Avg Progress",
-      value: `${avgProgress}%`,
+      value: `${analyticsData.avgProgress}%`,
       icon: <DashboardOutlined />,
       color: "text-green-600",
       bgColor: "bg-green-50",
     },
     {
       title: "Open Issues",
-      value: totalIssues,
+      value: analyticsData.openIssues,
       icon: <AlertOutlined />,
       color: "text-red-600",
       bgColor: "bg-red-50",
@@ -286,13 +299,13 @@ export default function Analytics() {
         <Card className="rounded-lg border border-gray-200 p-4">
           <div className="mb-3">
             <h3 className="font-semibold text-gray-900 text-sm">Team Workload Analysis</h3>
-            <p className="text-xs text-gray-500 mt-0.5">Top 10 team members by allocated hours</p>
+            <p className="text-xs text-gray-500 mt-0.5">Top team members by allocated hours</p>
           </div>
           
           <div className="h-[250px]">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
-                data={teamWorkloadData}
+                data={analyticsData.teamWorkloadData}
                 layout="vertical"
                 margin={{ top: 5, right: 20, left: 0, bottom: 5 }}
               >
@@ -338,7 +351,7 @@ export default function Analytics() {
           <div className="h-[250px]">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart
-                data={projectTimelineData}
+                data={analyticsData.projectTimelineData}
                 margin={{ top: 10, right: 20, left: 10, bottom: 10 }}
               >
                 <CartesianGrid strokeDasharray="2 2" stroke="#f3f4f6" />

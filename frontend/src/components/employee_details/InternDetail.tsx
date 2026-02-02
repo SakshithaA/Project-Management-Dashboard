@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, Progress, Tag, Avatar, Button, Row, Col, Timeline, Divider } from "antd";
 import { 
   ArrowLeftOutlined,
@@ -8,91 +8,124 @@ import {
   CalendarOutlined,
   TeamOutlined,
   ClockCircleOutlined,
-  StarOutlined,
   CheckCircleOutlined
 } from "@ant-design/icons";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
+import { api } from "../../services/api";
+import type{ Intern, TeamMember, Project } from "../../services/api";
 
 export default function InternDetail() {
   const navigate = useNavigate();
-  const location = useLocation();
+  const { id } = useParams();
+  const [intern, setIntern] = useState<Intern | null>(null);
+  const [mentor, setMentor] = useState<TeamMember | null>(null);
+  const [project, setProject] = useState<Project | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  // Get intern data from navigation state
-  const { intern, mentor, mentorId } = location.state || {};
+  useEffect(() => {
+    if (id) {
+      fetchInternData(parseInt(id));
+    }
+  }, [id]);
 
-  // Example intern data if not provided
-  const internData = intern || {
-    id: 1,
-    name: "Alex Johnson",
-    studyTrack: "Computer Science - Mobile Development",
-    university: "Tech University",
-    duration: "6 months internship (Jan 2026 - Jun 2026)",
-    skills: ["React", "Node.js", "MongoDB", "Express", "TypeScript", "Git"],
-    progress: 75,
-    certifications: ["MERN Stack Certification", "AWS Fundamentals"],
-    nextReview: "2026-04-20",
-    mentor: "Sarah Johnson",
-    expectedCompletion: "2026-06-30",
-    performance: "Excellent",
-    currentProject: "E-commerce Platform - Backend Module"
+  const fetchInternData = async (internId: number) => {
+    try {
+      setLoading(true);
+      const internData = await api.getIntern(internId);
+      if (internData) {
+        setIntern(internData);
+        
+        // Fetch mentor and project data
+        const [mentorData, projectData] = await Promise.all([
+          api.getTeamMember(internData.mentorId),
+          api.getProject(internData.projectId)
+        ]);
+        
+        setMentor(mentorData);
+        setProject(projectData);
+      }
+    } catch (error) {
+      console.error('Error fetching intern data:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  // Learning timeline data (updated to 2026)
+  // Learning timeline data based on intern duration
   const timelineData = [
     {
-      time: 'Jan 2026',
+      time: 'Jan 2024',
       color: 'green',
       title: 'Orientation & Onboarding',
       description: 'Company culture, tools setup, team introduction'
     },
     {
-      time: 'Feb 2026',
+      time: 'Feb 2024',
       color: 'blue',
       title: 'React Native Fundamentals',
       description: 'Completed React Native basics and first mobile app'
     },
     {
-      time: 'Mar 2026',
+      time: 'Mar 2024',
       color: 'blue',
       title: 'API Integration Project',
       description: 'Successfully integrated 3 external APIs into main project'
     },
     {
-      time: 'Apr 2026',
+      time: 'Apr 2024',
       color: 'purple',
       title: 'Current: Payment Module',
       description: 'Developing secure payment processing module'
     },
     {
-      time: 'May 2026',
+      time: 'May 2024',
       color: 'gray',
       title: 'Performance Optimization',
       description: 'Planned: Mobile app performance enhancement'
     },
     {
-      time: 'Jun 2026',
+      time: 'Jun 2024',
       color: 'gray',
       title: 'Final Project & Presentation',
       description: 'Complete full project implementation'
     }
   ];
 
-  // Milestones data (updated to 2026) - Removed Module Deployment and Performance Review
+  // Milestones data
   const milestones = [
-    { title: '1st Test', date: '2026-01-25', status: 'completed' },
-    { title: '2nd Test', date: '2026-02-10', status: 'completed' },
-    { title: 'Certification Completed', date: '2026-02-28', status: 'completed' },
-    { title: '4th Month Presentation', date: '2026-06-15', status: 'upcoming' }
+    { title: '1st Test', date: '2024-01-25', status: 'completed' },
+    { title: '2nd Test', date: '2024-02-10', status: 'completed' },
+    { title: 'Certification Completed', date: '2024-02-28', status: 'completed' },
+    { title: '4th Month Presentation', date: '2024-06-15', status: 'upcoming' }
   ];
 
-  // Recent activities (updated to 2026) - without points
+  // Recent activities
   const activities = [
-    { action: 'Completed payment module API integration', date: '2026-03-25' },
-    { action: 'Passed code review for authentication module', date: '2026-03-22' },
-    { action: 'Fixed critical bug in checkout flow', date: '2026-03-20' },
-    { action: 'Attended React Native workshop', date: '2026-03-18' },
-    { action: 'Completed TypeScript certification', date: '2026-03-15' }
+    { action: 'Completed payment module API integration', date: '2024-03-25' },
+    { action: 'Passed code review for authentication module', date: '2024-03-22' },
+    { action: 'Fixed critical bug in checkout flow', date: '2024-03-20' },
+    { action: 'Attended React Native workshop', date: '2024-03-18' },
+    { action: 'Completed TypeScript certification', date: '2024-03-15' }
   ];
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <div className="text-center py-12">Loading...</div>
+      </div>
+    );
+  }
+
+  if (!intern) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <div className="text-center py-12">
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">Intern not found</h2>
+          <Button onClick={() => navigate(-1)}>Go Back</Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -107,7 +140,11 @@ export default function InternDetail() {
           >
             Back to Mentor
           </Button>
-          <Button type="primary" className="bg-blue-600 hover:bg-blue-700">
+          <Button 
+            type="primary" 
+            className="bg-blue-600 hover:bg-blue-700"
+            onClick={() => navigate(`/intern/${intern.id}/edit`)}
+          >
             Update Progress
           </Button>
         </div>
@@ -124,23 +161,23 @@ export default function InternDetail() {
                 style={{ backgroundColor: '#8b5cf6' }}
                 className="mr-4"
               >
-                {internData.name.split(' ').map((n: string) => n[0]).join('')}
+                {intern.name.split(' ').map((n: string) => n[0]).join('')}
               </Avatar>
               <div className="ml-5">
-                <h1 className="text-2xl font-bold text-gray-900">{internData.name}</h1>
-                <p className="text-gray-500">{internData.studyTrack}</p>
+                <h1 className="text-2xl font-bold text-gray-900">{intern.name}</h1>
+                <p className="text-gray-500">{intern.studyTrack}</p>
                 <div className="flex items-center gap-4 mt-1">
                   <div className="flex items-center text-sm text-gray-600">
                     <BookOutlined className="mr-1" />
-                    {internData.university}
+                    {intern.university}
                   </div>
                   <div className="flex items-center text-sm text-gray-600">
                     <TeamOutlined className="mr-1" />
-                    Mentor: <span className="font-medium ml-1">{internData.mentor}</span>
+                    Mentor: <span className="font-medium ml-1">{mentor?.name || 'Not assigned'}</span>
                   </div>
                   <div className="flex items-center text-sm text-gray-600">
                     <CalendarOutlined className="mr-1" />
-                    {internData.duration}
+                    {intern.duration}
                   </div>
                 </div>
               </div>
@@ -150,13 +187,18 @@ export default function InternDetail() {
             <div className="flex items-center justify-between">
               <div className="flex flex-wrap gap-1">
                 <Tag color="purple" className="text-xs" icon={<UserOutlined />}>Intern</Tag>
-             </div>
+                {project && (
+                  <Tag color="blue" className="text-xs">
+                    Assigned to: {project.title}
+                  </Tag>
+                )}
+              </div>
               
               {/* Progress Circle */}
               <div className="flex items-center mr-10">
                 <Progress 
                   type="circle" 
-                  percent={internData.progress} 
+                  percent={intern.progress} 
                   strokeColor="#8b5cf6" 
                   size={60}
                   format={percent => (
@@ -237,34 +279,15 @@ export default function InternDetail() {
                     
                     {/* Date Display */}
                     <div className="text-2xl font-bold text-blue-600 mb-1">
-                      {internData.nextReview}
+                      {intern.nextReview}
                     </div>
                     
                     <div className="text-gray-500 text-sm mb-4">
-                      In Today
+                      {new Date(intern.nextReview) > new Date() ? "Upcoming" : "Due"}
                     </div>
                   </div>
 
                   <Divider className="my-3" />
-
-                  {/* Time remaining */}
-                  <div className="mb-4">
-                    <div className="text-gray-700 font-medium text-sm mb-2 text-center">Time remaining</div>
-                    <div className="flex justify-center space-x-4">
-                      <div className="text-center">
-                        <div className="text-xl font-bold text-gray-900">14</div>
-                        <div className="text-gray-500 text-xs">Days</div>
-                      </div>
-                      <div className="text-center">
-                        <div className="text-xl font-bold text-gray-900">6</div>
-                        <div className="text-gray-500 text-xs">Hours</div>
-                      </div>
-                      <div className="text-center">
-                        <div className="text-xl font-bold text-gray-900">45</div>
-                        <div className="text-gray-500 text-xs">Minutes</div>
-                      </div>
-                    </div>
-                  </div>
 
                   {/* Review Details */}
                   <div className="text-left bg-white p-3 rounded border border-blue-100 mb-4">
@@ -280,16 +303,15 @@ export default function InternDetail() {
                       </div>
                       <div className="flex justify-between">
                         <span className="text-gray-600">Reviewer:</span>
-                        <span className="font-medium">{internData.mentor}</span>
+                        <span className="font-medium">{mentor?.name || 'Not assigned'}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-gray-600">Location:</span>
-                        <span className="font-medium">Conference Room A</span>
+                        <span className="text-gray-600">Project:</span>
+                        <span className="font-medium">{project?.title || 'Not assigned'}</span>
                       </div>
                     </div>
                   </div>
 
-                  {/* Only Prepare Review Notes button */}
                   <Button type="primary" block className="bg-blue-600 hover:bg-blue-700 h-10 text-sm">
                     Prepare Review Notes
                   </Button>
@@ -299,32 +321,32 @@ export default function InternDetail() {
               {/* Certifications Earned */}
               <Card title="Certifications Earned" className="border border-gray-200" size="small">
                 <div className="space-y-2">
-                  <div className="flex items-center p-2 bg-green-50 border border-green-200 rounded">
-                    <TrophyOutlined className="text-green-500 mr-2" />
-                    <div>
-                      <div className="font-medium text-sm">MERN Stack Certification</div>
-                      <div className="text-gray-500 text-xs">Completed</div>
+                  {intern.certifications.length > 0 ? (
+                    intern.certifications.map((cert, index) => (
+                      <div key={index} className="flex items-center p-2 bg-green-50 border border-green-200 rounded">
+                        <TrophyOutlined className="text-green-500 mr-2" />
+                        <div>
+                          <div className="font-medium text-sm">{cert}</div>
+                          <div className="text-gray-500 text-xs">Completed</div>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-center py-2 text-gray-500 text-sm">
+                      No certifications yet
                     </div>
-                  </div>
-                  <div className="flex items-center p-2 bg-green-50 border border-green-200 rounded">
-                    <TrophyOutlined className="text-green-500 mr-2" />
-                    <div>
-                      <div className="font-medium text-sm">AWS Fundamentals</div>
-                      <div className="text-gray-500 text-xs">Completed</div>
-                    </div>
-                  </div>
+                  )}
                 </div>
               </Card>
 
               {/* Technical Skills */}
               <Card title="Technical Skills" className="border border-gray-200" size="small">
                 <div className="flex flex-wrap gap-1">
-                  <Tag color="blue" className="text-xs px-2 py-0.5">React</Tag>
-                  <Tag color="blue" className="text-xs px-2 py-0.5">Node.js</Tag>
-                  <Tag color="blue" className="text-xs px-2 py-0.5">MongoDB</Tag>
-                  <Tag color="blue" className="text-xs px-2 py-0.5">Express</Tag>
-                  <Tag color="blue" className="text-xs px-2 py-0.5">TypeScript</Tag>
-                  <Tag color="blue" className="text-xs px-2 py-0.5">Git</Tag>
+                  {intern.skills.map((skill, index) => (
+                    <Tag key={index} color="blue" className="text-xs px-2 py-0.5">
+                      {skill}
+                    </Tag>
+                  ))}
                 </div>
               </Card>
             </div>

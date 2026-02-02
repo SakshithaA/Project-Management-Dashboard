@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Form, Input, Select, DatePicker, InputNumber, Button } from "antd";
 import { UserOutlined, PlusOutlined, DeleteOutlined } from "@ant-design/icons";
@@ -20,6 +20,9 @@ export default function AddProject() {
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([
     { id: 1, name: "", role: "", hoursAllocated: 0 }
   ]);
+  
+  // Add state for form validity
+  const [isFormValid, setIsFormValid] = useState(false);
 
   const projectTypes = [
     "Fullstack",
@@ -38,6 +41,29 @@ export default function AddProject() {
     "Completed",
     "Cancelled"
   ];
+
+  // Check form validity whenever form values or team members change
+  useEffect(() => {
+    const checkFormValidity = async () => {
+      try {
+        // Validate all form fields
+        await form.validateFields();
+        
+        // Check if all team members have required fields filled
+        const hasInvalidTeamMembers = teamMembers.some(member => 
+          !member.name.trim() || !member.role.trim() || member.hoursAllocated < 0
+        );
+        
+        // Set form validity based on both form fields and team members
+        setIsFormValid(!hasInvalidTeamMembers);
+      } catch (error) {
+        // If form validation fails, form is invalid
+        setIsFormValid(false);
+      }
+    };
+
+    checkFormValidity();
+  }, [form, teamMembers]);
 
   const handleAddTeamMember = () => {
     setTeamMembers([...teamMembers, {
@@ -61,6 +87,9 @@ export default function AddProject() {
   };
 
   const handleSubmit = (values: any) => {
+    // Double-check form validity before submission
+    if (!isFormValid) return;
+    
     console.log("Project data:", { ...values, teamMembers });
     // API call would go here
     navigate("/overview");
@@ -92,31 +121,33 @@ export default function AddProject() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Name
+                Name *
               </label>
               <Input
                 placeholder="ex Sarah Johnson"
                 value={member.name}
                 onChange={(e) => handleTeamMemberChange(member.id, 'name', e.target.value)}
                 className="rounded-lg"
+                required
               />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Role
+                Role *
               </label>
               <Input
                 placeholder="ex Lead Developer"
                 value={member.role}
                 onChange={(e) => handleTeamMemberChange(member.id, 'role', e.target.value)}
                 className="rounded-lg"
+                required
               />
             </div>
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Allocated Hours
+              Allocated Hours *
             </label>
             <InputNumber
               min={0}
@@ -125,6 +156,7 @@ export default function AddProject() {
               onChange={(value) => handleTeamMemberChange(member.id, 'hoursAllocated', value || 0)}
               className="w-full rounded-lg"
               addonAfter="hours"
+              required
             />
           </div>
         </div>
@@ -283,6 +315,8 @@ export default function AddProject() {
       onFinish={handleSubmit}
       form={form}
       sections={sections}
+      // Add this prop to control submit button disabled state
+      submitDisabled={!isFormValid}
     />
   );
 }
