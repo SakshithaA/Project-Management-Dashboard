@@ -5,6 +5,7 @@ import {
   ExclamationCircleOutlined,
   CalendarOutlined
 } from "@ant-design/icons";
+import { useNavigate } from "react-router-dom";
 
 // Export the interface
 export interface Project {
@@ -182,6 +183,8 @@ export default function ProjectCards({
   selectedTypes = [], 
   selectedStatuses = [] 
 }: ProjectCardsProps) {
+  const navigate = useNavigate();
+
   // Filter projects based on search text, selected types, and selected statuses
   const filteredProjects = projects.filter(project => {
     // Search filter
@@ -200,6 +203,10 @@ export default function ProjectCards({
 
     return searchMatch && typeMatch && statusMatch;
   });
+
+  const handleCardClick = (projectId: number) => {
+    navigate(`/project/${projectId}`);
+  };
 
   return (
     <div className="mt-6 mx-5">
@@ -226,8 +233,9 @@ export default function ProjectCards({
           {filteredProjects.map((project) => (
             <Card
               key={project.id}
-              className={`rounded-lg border border-gray-200 hover:shadow-md transition-shadow ${getColorClass(project.color)} border-l-4`}
+              className={`rounded-lg border border-gray-200 hover:shadow-md transition-shadow ${getColorClass(project.color)} border-l-4 cursor-pointer hover:border-blue-300`}
               bodyStyle={{ padding: '20px' }}
+              onClick={() => handleCardClick(project.id)}
             >
               {/* Project Title & Client */}
               <div className="mb-4">

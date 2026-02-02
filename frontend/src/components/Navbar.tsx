@@ -17,6 +17,10 @@ export default function Navbar() {
     return path.includes('addproject') || 
            path.includes('addpoc') || 
            path.includes('report') ||
+           path.includes('/project/') ||
+           path.includes('/report/')||
+           path.includes('/team-member/') ||
+           path.includes('/intern/') ||
            path.includes('forms/');
   };
 

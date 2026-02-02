@@ -5,7 +5,12 @@ import Analytics from './pages/Analytics'
 import POCCards from './pages/POCs'
 import AddProject from './pages/forms/AddProject'
 import AddPOC from './pages/forms/AddPOC'
+import ProjectDetailPage from './pages/ProjectDetailPage';
+import ReportGenerate from './pages/ReportGeneration';
+import TeamMemberDetail from './components/TeamMemberDetail';
+import InternDetail from './components/InternDetail';
 import './App.css'
+
 
 export default function App() {
   return (
@@ -20,6 +25,10 @@ export default function App() {
             <Route path="/pocs" element={<POCCards />} />
             <Route path="/addproject" element={<AddProject />}/>
             <Route path="/addpoc" element={<AddPOC />}/>
+            <Route path="/project/:id" element={<ProjectDetailPage />} />
+             <Route path="/team-member/:id" element={<TeamMemberDetail />} />
+            <Route path="/report" element={<ReportGenerate />} />
+            <Route path="/intern/:id" element={<InternDetail />} />
           </Routes>
         </div>
       </div>

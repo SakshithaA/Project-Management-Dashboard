@@ -22,9 +22,9 @@ interface POCCardProps {
 }
 
 
-export const pocs: POC[] = [];
+//export const pocs: POC[] = [];
 
-/*export const pocs: POC[] = [
+export const pocs: POC[] = [
   {
     id: 1,
     title: "Microservices Architecture with gRPC",
@@ -81,7 +81,7 @@ export const pocs: POC[] = [];
     technologies: ["React", "Service Workers", "IndexedDB", "Web App Manifest"],
     postedDate: "1 week ago"
   }
-];*/
+];
 
 const getTechColor = (tech: string) => {
   const techLower = tech.toLowerCase();
