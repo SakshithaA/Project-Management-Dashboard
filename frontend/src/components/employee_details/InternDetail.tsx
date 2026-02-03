@@ -121,7 +121,7 @@ export default function InternDetail() {
       <div className="min-h-screen bg-gray-50">
         <div className="text-center py-12">
           <h2 className="text-xl font-semibold text-gray-900 mb-4">Intern not found</h2>
-          <Button onClick={() => navigate(-1)}>Go Back</Button>
+          <Button onClick={() => navigate(`/overview`)}>Go Back</Button>
         </div>
       </div>
     );
@@ -135,7 +135,7 @@ export default function InternDetail() {
           <Button 
             type="text"
             icon={<ArrowLeftOutlined />}
-            onClick={() => navigate(-1)}
+            onClick={() => navigate(`/team-member/${intern.mentorId}`)}
             className="text-gray-600 hover:text-gray-900 hover:bg-gray-100 px-3 py-2 rounded-lg transition-colors duration-150"
           >
             Back to Mentor

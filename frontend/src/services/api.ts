@@ -121,8 +121,7 @@ const fetchDatabase = async (): Promise<Database> => {
   if (db) return db;
   
   try {
-    // In development, place the db.json file in the public folder
-    const response = await fetch('../data.json');
+    const response = await fetch('/data.json');
     if (!response.ok) {
       throw new Error('Failed to fetch database');
     }
@@ -229,6 +228,7 @@ export const api = {
     await delay(200);
     const database = await fetchDatabase();
     const intern = database.interns.find(i => i.id === id);
+    console.log('Fetched intern:', intern);
     return intern || null;
   },
 

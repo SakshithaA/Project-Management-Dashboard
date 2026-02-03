@@ -177,7 +177,7 @@ END OF REPORT`;
           <Button 
             type="text"
             icon={<ArrowLeftOutlined />}
-            onClick={() => navigate(backPath)}
+            onClick={() => navigate(`/overview`)}
             className="text-gray-600 hover:text-gray-900 hover:bg-gray-100 px-3 py-2 rounded-lg transition-colors duration-150"
           >
             Back to Dashboard
@@ -208,8 +208,14 @@ END OF REPORT`;
           <Col span={8}>
             {/* Filters Section */}
             <Card 
-              title="Filter projects by type and status" 
-              className="mb-6 border border-gray-200"
+              title={
+                <div className="flex items-center justify-center">
+                  <span className="text-sm font-small text-gray-800 whitespace-normal text-center">
+                    Filter projects by type and status
+                  </span>
+                </div>
+              }
+              className="mb-6 border border-gray-200 "
             >
               <div className="space-y-6">
                 <div>

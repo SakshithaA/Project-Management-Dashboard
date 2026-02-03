@@ -4,6 +4,7 @@ import { Form, Input, Select, InputNumber, Avatar, DatePicker, Tag, message } fr
 import { UserOutlined, BookOutlined, TeamOutlined, CalendarOutlined } from "@ant-design/icons";
 import FormTemplate from "../../components/FormTemplate";
 import { api } from "../../services/api";
+import dayjs from "dayjs";
 
 const { Option } = Select;
 const { TextArea } = Input;
@@ -95,9 +96,17 @@ export default function UpdateIntern() {
   const fetchInternData = async (internId: number) => {
     try {
       setLoading(true);
+      console.log('Fetching intern with ID:', internId);
+      
       const data = await api.getIntern(internId);
+      console.log('Intern data received:', data);
+      
       if (data) {
         setInternData(data);
+        
+        // Convert nextReview string to dayjs object for DatePicker
+        const nextReviewDate = data.nextReview ? dayjs(data.nextReview) : dayjs().add(30, 'day');
+        
         form.setFieldsValue({
           name: data.name,
           studyTrack: data.studyTrack,
@@ -106,10 +115,11 @@ export default function UpdateIntern() {
           progress: data.progress,
           skills: data.skills || [],
           certifications: data.certifications || [],
-          nextReview: data.nextReview || '2024-04-20',
-          mentorId: data.mentorId,
-          projectId: data.projectId
+          nextReview: nextReviewDate, // Use dayjs object instead of string
+          mentorId: data.mentorId || 1,
+          projectId: data.projectId || 1
         });
+        console.log('Form values set successfully');
       }
     } catch (error) {
       console.error('Error fetching intern data:', error);
@@ -119,12 +129,14 @@ export default function UpdateIntern() {
     }
   };
 
+
   const fetchMentorsAndProjects = async () => {
     try {
       const [mentorsData, projectsData] = await Promise.all([
         api.getAllTeamMembers(),
-        api.getProjects()
+        api.getProjects(),
       ]);
+      setMentors(mentorsData);
       setProjects(projectsData);
     } catch (error) {
       console.error('Error fetching data:', error);
