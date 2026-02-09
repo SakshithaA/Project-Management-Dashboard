@@ -1,7 +1,9 @@
-import { Card, Form, Button } from "antd";
+import { Card, Form, Button, Typography } from "antd";
 import { ArrowLeftOutlined } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import type { ReactNode } from "react";
+
+const { Title } = Typography;
 
 interface FormTemplateProps {
   backPath: string;
@@ -49,7 +51,7 @@ export default function FormTemplate({
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 m-0">
+    <div className="min-h-screen bg-gray-50 m-0 font-sansation">
       {/* Navbar-like Back Bar */}
       <div className="bg-white border-b border-gray-200 px-0 py-4 m-0">
         <div className="max-w-4xl mx-auto">
@@ -57,7 +59,7 @@ export default function FormTemplate({
             type="text"
             icon={<ArrowLeftOutlined />}
             onClick={() => navigate(backPath)}
-            className="text-gray-600 hover:text-gray-900 hover:bg-gray-100 px-3 py-2 rounded-lg transition-colors duration-150"
+            className="text-gray-600 hover:text-gray-900 hover:bg-gray-100 px-3 py-2 rounded-lg transition-colors duration-150 font-sansation"
           >
             Back to Dashboard
           </Button>
@@ -69,8 +71,10 @@ export default function FormTemplate({
         <div className="max-w-4xl mx-auto">
           {/* Header */}
           <div className="mb-8">
-            <h1 className="text-2xl font-bold text-gray-900">{title}</h1>
-            <p className="text-gray-500 mt-2">{subtitle}</p>
+            <Title level={2} className="font-sansation text-gray-900 mb-2">
+              {title}
+            </Title>
+            <p className="text-gray-500 font-sansation">{subtitle}</p>
           </div>
 
           <Form
@@ -89,35 +93,33 @@ export default function FormTemplate({
                       className="w-3 h-3 rounded-full mr-3"
                       style={{ backgroundColor: section.color }}
                     ></div>
-                    <span className="text-lg font-semibold">{section.title}</span>
+                    <span className="text-lg font-semibold font-sansation">{section.title}</span>
                   </div>
                 }
                 className="mb-6 border border-gray-200 rounded-lg"
               >
-                <p className="text-gray-500 mb-6 -mt-2">{section.subtitle}</p>
+                <p className="text-gray-500 mb-6 -mt-2 font-sansation">{section.subtitle}</p>
                 <div className="space-y-6">
                   {section.content}
                 </div>
               </Card>
             ))}
 
-            {/* Action Buttons - At opposite ends */}
-            <div className="flex justify-between items-center pt-6 border-t border-gray-200">
-              <div>
-                {extraActions}
-                <Button
-                  size="large"
-                  onClick={handleCancel}
-                  className="px-8 rounded-lg border-gray-300"
-                >
-                  {cancelText}
-                </Button>
-              </div>
+            {/* Action Buttons */}
+            <div className="flex justify-end items-center pt-6 border-t border-gray-200 gap-2">
+              {extraActions}
+              <Button
+                size="large"
+                onClick={handleCancel}
+                className="font-sansation rounded-lg"
+              >
+                {cancelText}
+              </Button>
               <Button
                 type="primary"
                 htmlType="submit"
                 size="large"
-                className="px-8 rounded-lg"
+                className="font-sansation rounded-lg"
                 disabled={submitDisabled}
               >
                 {submitText}

@@ -103,12 +103,6 @@ export default function POCCardsWithData({
             Explore and track experimental projects and technology validations
           </Text>
         </div>
-        {/* Show Create POC button only when there are POCs */}
-        {filteredPOCs.length > 0 && (
-          <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/add-poc')}>
-            Create POC
-          </Button>
-        )}
       </div>
 
       {/* Divider */}
@@ -149,6 +143,7 @@ export default function POCCardsWithData({
               key={poc.id}
               className="rounded-lg border border-gray-200 hover:shadow-md transition-shadow hover:border-blue-300"
               bodyStyle={{ padding: '20px' }}
+              onClick={() => navigate(`/poc/${poc.id}`)}
             >
               {/* POC Title */}
               <div className="mb-4">

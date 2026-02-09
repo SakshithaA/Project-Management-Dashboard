@@ -311,10 +311,6 @@ export default function InternDetail() {
                       </div>
                     </div>
                   </div>
-
-                  <Button type="primary" block className="bg-blue-600 hover:bg-blue-700 h-10 text-sm">
-                    Prepare Review Notes
-                  </Button>
                 </div>
               </Card>
 

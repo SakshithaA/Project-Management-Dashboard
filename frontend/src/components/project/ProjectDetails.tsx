@@ -7,7 +7,8 @@ import {
   CalendarOutlined,
   ExclamationCircleOutlined,
   CheckCircleOutlined,
-  InfoCircleOutlined
+  InfoCircleOutlined,
+  EditOutlined
 } from "@ant-design/icons";
 import { getTypeColor, getStageColor } from "./projectcard";
 import type { Project } from "./projectcard";
@@ -48,6 +49,13 @@ export default function ProjectDetail({ projectId }: ProjectDetailProps) {
       console.error('Error fetching project data:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Handle Update Project button click
+  const handleUpdateProject = () => {
+    if (project) {
+      navigate(`/update-project/${project.id}`, { state: { project } });
     }
   };
 
@@ -261,8 +269,16 @@ export default function ProjectDetail({ projectId }: ProjectDetailProps) {
           >
             Back to Dashboard
           </Button>
-        </div>
-      </div>
+          <Button 
+              type="primary" 
+              icon={<EditOutlined />}
+              onClick={handleUpdateProject}
+              className="bg-blue-600 hover:bg-blue-700 align-middle float-right"
+            >
+              Update Project
+            </Button>
+          </div>
+        </div> 
 
       {/* Project Content */}
       <div className="p-6 mx-20">

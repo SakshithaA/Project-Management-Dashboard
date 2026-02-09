@@ -22,6 +22,11 @@ export default function Navbar() {
            path.includes('/team-member/') ||
            path.includes('/intern/') ||
            path.includes('/add-poc') ||
+           path.includes('/update-project/') ||
+           path.includes('/update-poc/') ||
+           path.includes('/update-intern/') ||
+           path.includes('/update-team-member/') ||
+           path.includes('poc/')||
            path.includes('forms/');
   };
 

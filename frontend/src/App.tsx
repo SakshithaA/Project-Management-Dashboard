@@ -11,6 +11,9 @@ import TeamMemberDetail from './components/employee_details/TeamMemberDetail';
 import InternDetail from './components/employee_details/InternDetail';
 import UpdateIntern from './pages/forms/UpdateIntern';
 import UpdateTeamMember from './pages/forms/UpdateTeamMember';
+import UpdateProject from './pages/forms/UpdateProject';
+import POCDetails from './pages/POCDetails';
+import UpdatePOC from './pages/forms/UpdatePOC';
 import './App.css'
 
 
@@ -34,6 +37,9 @@ export default function App() {
             <Route path="/add-poc" element={<AddPOC />} />
             <Route path="/intern/:id/edit" element={<UpdateIntern />} />
             <Route path="/team-member/:id/edit" element={<UpdateTeamMember />} />
+            <Route path="/update-project/:id" element={<UpdateProject />} />
+            <Route path="/poc/:id" element={<POCDetails />} />
+            <Route path="/update-poc/:id" element={<UpdatePOC />} />
           </Routes>
         </div>
       </div>
