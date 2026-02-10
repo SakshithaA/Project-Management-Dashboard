@@ -10,15 +10,16 @@ import {
   Tooltip, ResponsiveContainer, LineChart, Line,
   PieChart, Pie, Cell
 } from 'recharts';
-import { Card } from 'antd';
+import { Card, Spin, Alert } from "antd";
 import StatsCards from "../components/StatsCards";
-import { getStageColorHex, getTypeColorHex } from "../components/project/projectcard";
-import { api } from "../services/api";
+import { api } from "../lib/api";
+import { LoadingSkeleton } from "../components/LoadingSkeleton";
 
 export default function Analytics() {
   const [loading, setLoading] = useState(true);
-  const [projects, setProjects] = useState<any[]>([]);
+  const [error, setError] = useState<string | null>(null);
   const [analyticsData, setAnalyticsData] = useState<any>(null);
+  const [projectStats, setProjectStats] = useState<any>(null);
 
   useEffect(() => {
     fetchAnalyticsData();
@@ -27,95 +28,145 @@ export default function Analytics() {
   const fetchAnalyticsData = async () => {
     try {
       setLoading(true);
-      const [projectsData, analytics] = await Promise.all([
-        api.getProjects(),
-        api.getAnalytics()
+      setError(null);
+      
+      const [
+        summary,
+        byType,
+        byStatus,
+        teamWorkload,
+        projectTimeline,
+        issueStats
+      ] = await Promise.all([
+        api.getAnalyticsSummary(),
+        api.getProjectsByType(),
+        api.getProjectsByStatus(),
+        api.getTeamWorkload({ limit: 10 }),
+        api.getProjectTimeline(),
+        api.getIssueStats()
       ]);
-      setProjects(projectsData);
-      setAnalyticsData(analytics);
-    } catch (error) {
-      console.error('Error fetching analytics data:', error);
+
+      setAnalyticsData({
+        summary,
+        byType: byType.data,
+        byStatus: byStatus.data,
+        teamWorkload: teamWorkload.data,
+        projectTimeline: projectTimeline.data,
+        issueStats: issueStats.data
+      });
+
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load analytics data');
+      console.error('Error fetching analytics data:', err);
     } finally {
       setLoading(false);
     }
   };
 
-  if (loading || !analyticsData) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 p-10">
-        <div className="text-center py-12">Loading analytics...</div>
+        <LoadingSkeleton type="stats" count={1} />
+        <div className="mt-8">
+          <LoadingSkeleton type="card" count={2} />
+        </div>
       </div>
     );
   }
 
-  const totalProjects = projects.length;
-  const totalHours = projects.reduce((sum, project) => sum + project.hoursAllocated, 0);
-  const totalIssues = projects.reduce((sum, project) => sum + project.issues, 0);
-  const avgProgress = Math.round(projects.reduce((sum, project) => sum + project.progress, 0) / projects.length);
-  
-  const typeCount: Record<string, number> = {};
-  projects.forEach(project => {
-    typeCount[project.type] = (typeCount[project.type] || 0) + 1;
-  });
-  
-  const projectTypeData = Object.entries(typeCount).map(([name, value]) => ({
-    name,
-    value,
-    color: getTypeColorHex(name)
-  }));
-
-  const statusCount: Record<string, number> = {};
-  projects.forEach(project => {
-    statusCount[project.stage] = (statusCount[project.stage] || 0) + 1;
-  });
-  
-  const projectStatusData = Object.entries(statusCount).map(([name, value]) => ({
-    name,
-    value,
-    color: getStageColorHex(name)
-  }));
-
-  const issueStatusData = [
-    { name: 'Open', value: analyticsData.openIssues, color: '#ef4444' },
-    { name: 'Resolved', value: analyticsData.resolvedIssues, color: '#10b981' },
-  ];
+  if (error || !analyticsData) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-10">
+        <Alert
+          message="Error Loading Analytics"
+          description={error || "No data available"}
+          type="error"
+          showIcon
+          className="mb-4"
+        />
+      </div>
+    );
+  }
 
   const analyticsStats = [
     {
       title: "Total Team Members",
-      value: analyticsData.totalTeamMembers,
+      value: analyticsData.summary.totalTeamMembers,
       icon: <TeamOutlined />,
       color: "text-blue-600",
       bgColor: "bg-blue-50",
     },
     {
       title: "Total Hours",
-      value: `${analyticsData.totalHours}h`,
+      value: `${Math.round(analyticsData.summary.totalHoursAllocated)}h`,
       icon: <ClockCircleOutlined />,
       color: "text-purple-600",
       bgColor: "bg-purple-50",
     },
     {
       title: "Avg Progress",
-      value: `${analyticsData.avgProgress}%`,
+      value: `${analyticsData.summary.averageProgress.toFixed(1)}%`,
       icon: <DashboardOutlined />,
       color: "text-green-600",
       bgColor: "bg-green-50",
     },
     {
       title: "Open Issues",
-      value: analyticsData.openIssues,
+      value: analyticsData.summary.openIssues,
       icon: <AlertOutlined />,
       color: "text-red-600",
       bgColor: "bg-red-50",
     },
   ];
 
+  const projectTypeData = analyticsData.byType.map((item: any) => ({
+    name: item.type.replace('-', ' ').toUpperCase(),
+    value: item.count,
+    color: getTypeColorHex(item.type)
+  }));
+
+  const projectStatusData = analyticsData.byStatus.map((item: any) => ({
+    name: item.status.replace('-', ' ').toUpperCase(),
+    value: item.count,
+    color: getStatusColorHex(item.status)
+  }));
+
+  const issueStatusData = [
+    { name: 'Open', value: analyticsData.issueStats.open, color: '#dc2626' },
+    { name: 'In Progress', value: analyticsData.issueStats.inProgress, color: '#ea580c' },
+    { name: 'Resolved', value: analyticsData.issueStats.resolved, color: '#059669' },
+    { name: 'Closed', value: analyticsData.issueStats.closed, color: '#6b7280' },
+  ];
+
+  function getTypeColorHex(type: string) {
+    switch(type.toLowerCase()) {
+      case 'fullstack': return '#2563eb';
+      case 'data-engineering': return '#7c3aed';
+      case 'devops': return '#059669';
+      case 'cloud': return '#4f46e5';
+      case 'mobile': return '#db2777';
+      case 'frontend': return '#0891b2';
+      case 'backend': return '#ea580c';
+      default: return '#6b7280';
+    }
+  }
+
+  function getStatusColorHex(status: string) {
+    switch(status.toLowerCase()) {
+      case 'not-started': return '#6b7280';
+      case 'in-progress': return '#2563eb';
+      case 'on-hold': return '#ea580c';
+      case 'cancelled': return '#dc2626';
+      case 'completed': return '#059669';
+      default: return '#6b7280';
+    }
+  }
+
   const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
       return (
-        <div className="bg-white p-2 rounded-md shadow-sm border border-gray-200 text-xs">
-          <p className="font-medium text-gray-900">{payload[0].name}</p>
+        <div className="bg-white p-3 rounded-md shadow-lg border border-gray-300 text-sm">
+          <p className="font-semibold text-gray-900">{payload[0].name}</p>
           <p className="text-gray-700">{payload[0].value} projects</p>
         </div>
       );
@@ -126,8 +177,8 @@ export default function Analytics() {
   const BarTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
       return (
-        <div className="bg-white p-2 rounded-md shadow-sm border border-gray-200 text-xs">
-          <p className="font-medium text-gray-900">{payload[0].payload.name}</p>
+        <div className="bg-white p-3 rounded-md shadow-lg border border-gray-300 text-sm">
+          <p className="font-semibold text-gray-900">{payload[0].payload.name}</p>
           <p className="text-gray-700">Hours: {payload[0].value}</p>
         </div>
       );
@@ -138,8 +189,8 @@ export default function Analytics() {
   const LineTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       return (
-        <div className="bg-white p-2 rounded-md shadow-sm border border-gray-200 text-xs">
-          <p className="font-medium text-gray-900">{label}</p>
+        <div className="bg-white p-3 rounded-md shadow-lg border border-gray-300 text-sm">
+          <p className="font-semibold text-gray-900">{label}</p>
           <p className="text-gray-700">Projects: {payload[0].value}</p>
         </div>
       );
@@ -151,7 +202,7 @@ export default function Analytics() {
     const { cx, cy, midAngle, innerRadius, outerRadius, value, name } = props;
     const RADIAN = Math.PI / 180;
     
-    const radius = outerRadius + 15;
+    const radius = outerRadius + 20;
     const x = cx + radius * Math.cos(-midAngle * RADIAN);
     const y = cy + radius * Math.sin(-midAngle * RADIAN);
 
@@ -160,18 +211,18 @@ export default function Analytics() {
         <text 
           x={x} 
           y={y} 
-          fill="#111827"
+          fill="#1f2937"
           textAnchor={x > cx ? 'start' : 'end'} 
           dominantBaseline="central"
-          className="text-[10px] font-medium"
+          className="text-[11px] font-semibold"
         >
           {name} ({value})
         </text>
         <line 
           x1={cx + (outerRadius + 3) * Math.cos(-midAngle * RADIAN)} 
           y1={cy + (outerRadius + 3) * Math.sin(-midAngle * RADIAN)} 
-          x2={cx + (outerRadius + 12) * Math.cos(-midAngle * RADIAN)} 
-          y2={cy + (outerRadius + 12) * Math.sin(-midAngle * RADIAN)} 
+          x2={cx + (outerRadius + 15) * Math.cos(-midAngle * RADIAN)} 
+          y2={cy + (outerRadius + 15) * Math.sin(-midAngle * RADIAN)} 
           stroke="#9ca3af"
           strokeWidth="1"
         />
@@ -180,10 +231,10 @@ export default function Analytics() {
   };
 
   const renderFirstRowPieChart = (title: string, description: string, data: any[]) => (
-    <Card className="rounded-lg border border-gray-200 h-full p-4">
+    <Card className="rounded-lg border border-gray-300 h-full p-4 shadow-sm">
       <div className="mb-3">
         <h3 className="font-semibold text-gray-900 text-sm">{title}</h3>
-        <p className="text-xs text-gray-500 mt-0.5">{description}</p>
+        <p className="text-xs text-gray-600 mt-0.5 font-medium">{description}</p>
       </div>
       
       <div className="h-[240px]">
@@ -196,7 +247,7 @@ export default function Analytics() {
               labelLine={true}
               label={renderCustomLabel}
               outerRadius={70}
-              innerRadius={15}
+              innerRadius={20}
               fill="#8884d8"
               dataKey="value"
             >
@@ -212,10 +263,10 @@ export default function Analytics() {
   );
 
   const renderSecondRowPieChart = (title: string, description: string, data: any[]) => (
-    <Card className="rounded-lg border border-gray-200 h-full p-4">
+    <Card className="rounded-lg border border-gray-300 h-full p-4 shadow-sm">
       <div className="mb-3">
         <h3 className="font-semibold text-gray-900 text-sm">{title}</h3>
-        <p className="text-xs text-gray-500 mt-0.5">{description}</p>
+        <p className="text-xs text-gray-600 mt-0.5 font-medium">{description}</p>
       </div>
       
       <div className="flex">
@@ -245,12 +296,12 @@ export default function Analytics() {
             {data.map((item, index) => (
               <div key={index} className="flex items-center gap-1.5">
                 <div 
-                  className="w-3 h-3 rounded-full flex-shrink-0" 
+                  className="w-3 h-3 rounded-full flex-shrink-0 shadow-sm" 
                   style={{ backgroundColor: item.color }}
                 />
                 <div>
-                  <p className="text-xs font-medium text-gray-900">{item.name}</p>
-                  <p className="text-[10px] text-gray-500">{item.value} issues</p>
+                  <p className="text-xs font-semibold text-gray-900">{item.name}</p>
+                  <p className="text-[10px] text-gray-600 font-medium">{item.value} issues</p>
                 </div>
               </div>
             ))}
@@ -264,7 +315,7 @@ export default function Analytics() {
     <div className="min-h-screen bg-gray-50 p-10">
       <div className="mb-6">
         <h1 className="text-xl font-bold text-gray-900">Analytics Overview</h1>
-        <p className="text-gray-500 mt-1 text-xs">
+        <p className="text-gray-700 mt-1 text-xs font-medium">
           Comprehensive insights into project performance and team workload
         </p>
       </div>
@@ -274,7 +325,7 @@ export default function Analytics() {
       <div className="mt-8">
         <h2 className="text-sm font-semibold text-gray-800 mb-4">Project Distribution</h2>
         
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {renderFirstRowPieChart(
             "Projects by Type",
             "Distribution of project types across the portfolio",
@@ -289,32 +340,32 @@ export default function Analytics() {
         </div>
       </div>
 
-      <div className="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div className="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-6">
         {renderSecondRowPieChart(
           "Issue Status",
-          "Open vs resolved issues across all projects",
+          "Distribution of issue statuses across all projects",
           issueStatusData
         )}
 
-        <Card className="rounded-lg border border-gray-200 p-4">
+        <Card className="rounded-lg border border-gray-300 p-4 shadow-sm">
           <div className="mb-3">
             <h3 className="font-semibold text-gray-900 text-sm">Team Workload Analysis</h3>
-            <p className="text-xs text-gray-500 mt-0.5">Top team members by allocated hours</p>
+            <p className="text-xs text-gray-600 mt-0.5 font-medium">Top team members by allocated hours</p>
           </div>
           
           <div className="h-[250px]">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
-                data={analyticsData.teamWorkloadData}
+                data={analyticsData.teamWorkload}
                 layout="vertical"
                 margin={{ top: 5, right: 20, left: 0, bottom: 5 }}
               >
-                <CartesianGrid strokeDasharray="2 2" stroke="#f3f4f6" horizontal={true} vertical={false} />
+                <CartesianGrid strokeDasharray="2 2" stroke="#e5e7eb" horizontal={true} vertical={false} />
                 <XAxis 
                   type="number"
                   axisLine={false}
                   tickLine={false}
-                  tick={{ fill: '#6b7280', fontSize: 10 }}
+                  tick={{ fill: '#4b5563', fontSize: 10, fontWeight: 500 }}
                   domain={[0, 600]}
                   ticks={[0, 150, 300, 450, 600]}
                 />
@@ -323,14 +374,14 @@ export default function Analytics() {
                   dataKey="name"
                   axisLine={false}
                   tickLine={false}
-                  tick={{ fill: '#374151', fontSize: 9 }}
+                  tick={{ fill: '#374151', fontSize: 9, fontWeight: 500 }}
                   width={90}
                 />
                 <Tooltip content={<BarTooltip />} />
                 <Bar 
-                  dataKey="hours" 
+                  dataKey="totalHours" 
                   name="Hours"
-                  fill="#111827"
+                  fill="#1f2937"
                   radius={[0, 3, 3, 0]}
                   barSize={12}
                 />
@@ -342,41 +393,40 @@ export default function Analytics() {
       </div>
 
       <div className="mt-8">
-        <Card className="rounded-lg border border-gray-200 p-4">
+        <Card className="rounded-lg border border-gray-300 p-4 shadow-sm">
           <div className="mb-3">
             <h3 className="font-semibold text-gray-900 text-sm">Project Timeline</h3>
-            <p className="text-xs text-gray-500 mt-0.5">Project starts over time</p>
+            <p className="text-xs text-gray-600 mt-0.5 font-medium">Project starts over time</p>
           </div>
           
           <div className="h-[250px]">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart
-                data={analyticsData.projectTimelineData}
+                data={analyticsData.projectTimeline}
                 margin={{ top: 10, right: 20, left: 10, bottom: 10 }}
               >
-                <CartesianGrid strokeDasharray="2 2" stroke="#f3f4f6" />
+                <CartesianGrid strokeDasharray="2 2" stroke="#e5e7eb" />
                 <XAxis 
                   dataKey="month"
                   axisLine={false}
                   tickLine={false}
-                  tick={{ fill: '#6b7280', fontSize: 11 }}
+                  tick={{ fill: '#4b5563', fontSize: 11, fontWeight: 500 }}
                 />
                 <YAxis 
                   axisLine={false}
                   tickLine={false}
-                  tick={{ fill: '#6b7280', fontSize: 10 }}
-                  domain={[0, 2.5]}
-                  ticks={[0, 0.5, 1, 1.5, 2]}
+                  tick={{ fill: '#4b5563', fontSize: 10, fontWeight: 500 }}
+                  domain={[0, 'auto']}
                 />
                 <Tooltip content={<LineTooltip />} />
                 <Line 
                   type="monotone"
-                  dataKey="projects"
+                  dataKey="count"
                   name="Projects"
-                  stroke="#111827"
+                  stroke="#1f2937"
                   strokeWidth={2}
-                  dot={{ fill: '#111827', strokeWidth: 1, r: 3 }}
-                  activeDot={{ r: 5 }}
+                  dot={{ fill: '#1f2937', strokeWidth: 1, r: 4 }}
+                  activeDot={{ r: 6, stroke: '#1f2937', strokeWidth: 2 }}
                 />
               </LineChart>
             </ResponsiveContainer>

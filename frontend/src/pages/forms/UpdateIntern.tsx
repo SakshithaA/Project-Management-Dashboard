@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Form, Input, Select, InputNumber, Avatar, DatePicker, Tag, message } from "antd";
-import { UserOutlined, BookOutlined, TeamOutlined, CalendarOutlined } from "@ant-design/icons";
+import { Form, Input, Select, InputNumber, Avatar, DatePicker, Tag, message, AutoComplete, Button } from "antd";
+import { UserOutlined, BookOutlined, TeamOutlined, CalendarOutlined, TrophyOutlined } from "@ant-design/icons";
 import FormTemplate from "../../components/FormTemplate";
-import { api } from "../../services/api";
+import { api } from "../../lib/api";
 import dayjs from "dayjs";
 
 const { Option } = Select;
@@ -11,15 +11,17 @@ const { TextArea } = Input;
 
 export default function UpdateIntern() {
   const navigate = useNavigate();
-  const { id } = useParams();
+  const { id } = useParams<{ id: string }>();
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [isFormValid, setIsFormValid] = useState(false);
   const [internData, setInternData] = useState<any>(null);
   const [mentors, setMentors] = useState<any[]>([]);
   const [projects, setProjects] = useState<any[]>([]);
+  const [skills, setSkills] = useState<string[]>([]);
+  const [certifications, setCertifications] = useState<string[]>([]);
 
-  // Study tracks
   const studyTracks = [
     "Computer Science",
     "Software Engineering",
@@ -32,7 +34,6 @@ export default function UpdateIntern() {
     "Full Stack Development"
   ];
 
-  // Universities
   const universities = [
     "Tech University",
     "University of Technology",
@@ -43,7 +44,6 @@ export default function UpdateIntern() {
     "Technical Institute"
   ];
 
-  // Duration options
   const durationOptions = [
     "3 months internship",
     "6 months internship",
@@ -52,14 +52,12 @@ export default function UpdateIntern() {
     "Winter internship"
   ];
 
-  // Technical Skills (for suggestions)
   const commonSkills = [
     "React", "Node.js", "MongoDB", "Express", "JavaScript",
     "TypeScript", "Python", "Java", "SQL", "Git", "Docker",
     "AWS", "Azure", "HTML/CSS", "Vue.js", "Angular", "React Native"
   ];
 
-  // Common Certifications
   const commonCertifications = [
     "MERN Stack Certification",
     "AWS Fundamentals",
@@ -75,7 +73,7 @@ export default function UpdateIntern() {
 
   useEffect(() => {
     if (id) {
-      fetchInternData(parseInt(id));
+      fetchInternData();
       fetchMentorsAndProjects();
     }
   }, [id]);
@@ -93,33 +91,26 @@ export default function UpdateIntern() {
     checkFormValidity();
   }, [form]);
 
-  const fetchInternData = async (internId: number) => {
+  const fetchInternData = async () => {
     try {
       setLoading(true);
-      console.log('Fetching intern with ID:', internId);
+      console.log('Fetching intern with ID:', id);
       
-      const data = await api.getIntern(internId);
-      console.log('Intern data received:', data);
+      // Since interns are team members with userRole = 'intern'
+      const memberData = await api.getTeamMember(id!);
       
-      if (data) {
-        setInternData(data);
-        
-        // Convert nextReview string to dayjs object for DatePicker
-        const nextReviewDate = data.nextReview ? dayjs(data.nextReview) : dayjs().add(30, 'day');
+      if (memberData && memberData.userRole === 'intern') {
+        setInternData(memberData);
         
         form.setFieldsValue({
-          name: data.name,
-          studyTrack: data.studyTrack,
-          university: data.university,
-          duration: data.duration,
-          progress: data.progress,
-          skills: data.skills || [],
-          certifications: data.certifications || [],
-          nextReview: nextReviewDate, // Use dayjs object instead of string
-          mentorId: data.mentorId || 1,
-          projectId: data.projectId || 1
+          name: memberData.name,
+          email: memberData.email || '',
+          progress: 45, // Default value for demonstration
+          skills: memberData.skills || [],
+          certifications: [] // Would come from separate API
         });
-        console.log('Form values set successfully');
+        
+        setSkills(memberData.skills || []);
       }
     } catch (error) {
       console.error('Error fetching intern data:', error);
@@ -129,119 +120,165 @@ export default function UpdateIntern() {
     }
   };
 
-
   const fetchMentorsAndProjects = async () => {
     try {
       const [mentorsData, projectsData] = await Promise.all([
-        api.getAllTeamMembers(),
-        api.getProjects(),
+        api.getTeamMembers({ userRole: 'team-lead' }),
+        api.getProjects()
       ]);
-      setMentors(mentorsData);
-      setProjects(projectsData);
+      setMentors(mentorsData.data);
+      setProjects(projectsData.data);
     } catch (error) {
       console.error('Error fetching data:', error);
       message.error('Failed to load data');
     }
   };
 
+  const handleSkillAdd = (skill: string) => {
+    if (skill && !skills.includes(skill)) {
+      setSkills([...skills, skill]);
+    }
+  };
+
+  const handleSkillRemove = (skill: string) => {
+    setSkills(skills.filter(s => s !== skill));
+  };
+
+  const handleCertificationAdd = (cert: string) => {
+    if (cert && !certifications.includes(cert)) {
+      setCertifications([...certifications, cert]);
+    }
+  };
+
+  const handleCertificationRemove = (cert: string) => {
+    setCertifications(certifications.filter(c => c !== cert));
+  };
+
   const handleSubmit = async (values: any) => {
     if (!isFormValid || !id) return;
 
     try {
-      console.log('Updating intern:', values);
+      setSaving(true);
       
-      // Here you would update the JSON data
+      const updateData = {
+        name: values.name,
+        email: values.email,
+        skills: skills,
+        userRole: 'intern',
+        workloadPercentage: values.progress || 0,
+        // Note: We need to handle LC assignments separately
+      };
+
+      await api.updateTeamMember(id, updateData);
+      
       message.success('Intern updated successfully!');
+      setTimeout(() => {
+        navigate(`/intern/${id}`);
+      }, 1500);
       
-      await new Promise(resolve => setTimeout(resolve, 500));
-      navigate(`/intern/${id}`);
     } catch (error) {
       console.error('Error updating intern:', error);
       message.error('Failed to update intern');
+    } finally {
+      setSaving(false);
     }
   };
 
-  // Basic Information Section
+  const handleCancel = () => {
+    navigate(`/intern/${id}`);
+  };
+
   const basicInfoContent = (
     <>
       <div className="flex items-center mb-6">
         <Avatar 
           size={70}
-          style={{ backgroundColor: '#8b5cf6' }}
-          className="mr-4"
+          style={{ backgroundColor: '#7c3aed' }}
+          className="mr-4 shadow-sm"
         >
           {internData?.name?.split(' ').map((n: string) => n[0]).join('')}
         </Avatar>
         <div className="ml-4">
-          <h3 className="text-lg font-semibold">{internData?.name || 'Intern'}</h3>
-          <p className="text-gray-500">Intern ID: {id}</p>
+          <h3 className="text-lg font-semibold text-gray-900">{internData?.name || 'Intern'}</h3>
+          <p className="text-gray-600 text-sm font-medium">Intern ID: {id}</p>
         </div>
       </div>
 
       <Form.Item
-        label="Full Name"
+        label={<span className="font-semibold">Full Name</span>}
         name="name"
         rules={[{ required: true, message: 'Please enter full name' }]}
       >
         <Input 
           placeholder="Alex Johnson" 
           size="large"
-          className="rounded-lg"
+          className="rounded-lg border-gray-300"
           prefix={<UserOutlined className="text-gray-400" />}
         />
       </Form.Item>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-0">
+      <Form.Item
+        label={<span className="font-semibold">Email</span>}
+        name="email"
+        rules={[
+          { required: true, message: 'Please enter email' },
+          { type: 'email', message: 'Please enter a valid email' }
+        ]}
+      >
+        <Input 
+          placeholder="alex.johnson@company.com" 
+          size="large"
+          className="rounded-lg border-gray-300"
+          prefix={<UserOutlined className="text-gray-400" />}
+        />
+      </Form.Item>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <Form.Item
-          label="University"
+          label={<span className="font-semibold">University</span>}
           name="university"
-          rules={[{ required: true, message: 'Please select university' }]}
+          initialValue="Tech University"
         >
           <Select 
-            placeholder="Tech University" 
+            placeholder="Select university" 
             size="large"
-            className="rounded-lg"
+            className="rounded-lg border-gray-300"
             showSearch
-            allowClear
           >
             {universities.map(university => (
               <Option key={university} value={university}>{university}</Option>
             ))}
-            <Option value="other">Other (type below)</Option>
           </Select>
         </Form.Item>
 
         <Form.Item
-          label="Study Track"
+          label={<span className="font-semibold">Study Track</span>}
           name="studyTrack"
-          rules={[{ required: true, message: 'Please select study track' }]}
+          initialValue="Computer Science"
         >
           <Select 
-            placeholder="Computer Science" 
+            placeholder="Select study track" 
             size="large"
-            className="rounded-lg"
+            className="rounded-lg border-gray-300"
             showSearch
-            allowClear
           >
             {studyTracks.map(track => (
               <Option key={track} value={track}>{track}</Option>
             ))}
-            <Option value="other">Other (type below)</Option>
           </Select>
         </Form.Item>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-2">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <Form.Item
-          label="Duration"
+          label={<span className="font-semibold">Duration</span>}
           name="duration"
-          rules={[{ required: true, message: 'Please select duration' }]}
+          initialValue="6 months internship"
         >
           <Select 
-            placeholder="6 months internship" 
+            placeholder="Select duration" 
             size="large"
-            className="rounded-lg"
-            showSearch
+            className="rounded-lg border-gray-300"
           >
             {durationOptions.map(duration => (
               <Option key={duration} value={duration}>{duration}</Option>
@@ -250,37 +287,33 @@ export default function UpdateIntern() {
         </Form.Item>
 
         <Form.Item
-          label="Next Review Date"
+          label={<span className="font-semibold">Next Review Date</span>}
           name="nextReview"
-          rules={[{ required: true, message: 'Please select next review date' }]}
         >
           <DatePicker 
             placeholder="Select review date" 
             format="YYYY-MM-DD"
             size="large"
-            className="w-full rounded-lg"
+            className="w-full rounded-lg border-gray-300"
           />
         </Form.Item>
       </div>
     </>
   );
 
-  // Assignment Section
   const assignmentContent = (
     <>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <Form.Item
-          label="Mentor"
+          label={<span className="font-semibold">Mentor</span>}
           name="mentorId"
-          rules={[{ required: true, message: 'Please select a mentor' }]}
         >
           <Select 
             placeholder="Select mentor" 
             size="large"
-            className="rounded-lg"
+            className="rounded-lg border-gray-300"
             showSearch
             optionFilterProp="children"
-            allowClear
           >
             {mentors.map(mentor => (
               <Option key={mentor.id} value={mentor.id}>
@@ -288,11 +321,11 @@ export default function UpdateIntern() {
                   <Avatar 
                     size="small" 
                     className="mr-2"
-                    style={{ backgroundColor: mentor.avatarColor || '#3b82f6' }}
+                    style={{ backgroundColor: '#2563eb' }}
                   >
                     {mentor.name?.split(' ').map((n: string) => n[0]).join('')}
                   </Avatar>
-                  <span>{mentor.name} - {mentor.jobTitle || mentor.role}</span>
+                  <span className="font-medium">{mentor.name}</span>
                 </div>
               </Option>
             ))}
@@ -300,26 +333,24 @@ export default function UpdateIntern() {
         </Form.Item>
 
         <Form.Item
-          label="Project"
+          label={<span className="font-semibold">Project</span>}
           name="projectId"
-          rules={[{ required: true, message: 'Please select a project' }]}
         >
           <Select 
             placeholder="Select project" 
             size="large"
-            className="rounded-lg"
+            className="rounded-lg border-gray-300"
             showSearch
             optionFilterProp="children"
-            allowClear
           >
             {projects.map(project => (
               <Option key={project.id} value={project.id}>
                 <div className="flex items-center">
                   <div 
                     className="w-3 h-3 rounded-full mr-2"
-                    style={{ backgroundColor: project.color }}
+                    style={{ backgroundColor: '#2563eb' }}
                   ></div>
-                  <span>{project.title} - {project.client}</span>
+                  <span className="font-medium">{project.name}</span>
                 </div>
               </Option>
             ))}
@@ -328,7 +359,7 @@ export default function UpdateIntern() {
       </div>
 
       <Form.Item
-        label="Progress (%)"
+        label={<span className="font-semibold">Progress (%)</span>}
         name="progress"
         rules={[
           { required: true, message: 'Please enter progress' },
@@ -340,105 +371,149 @@ export default function UpdateIntern() {
           max={100}
           placeholder="80"
           size="large"
-          className="w-full rounded-lg"
+          className="w-full rounded-lg border-gray-300"
           addonAfter="%"
         />
       </Form.Item>
     </>
   );
 
-  // Skills & Certifications Section
   const skillsCertificationsContent = (
     <>
-      <Form.Item
-        label="Technical Skills"
-        name="skills"
-        help="Select skills or type new ones (press Enter to add)"
-      >
-        <Select
-          mode="tags"
-          size="large"
-          placeholder="Select or type skills"
-          className="rounded-lg"
-          tokenSeparators={[',']}
-          showSearch
+      <div className="mb-6">
+        <label className="block text-sm font-semibold text-gray-700 mb-2">
+          Technical Skills
+        </label>
+        <AutoComplete
+          options={commonSkills.map(skill => ({ value: skill }))}
+          onSelect={handleSkillAdd}
+          onSearch={(value) => {
+            if (value && !commonSkills.includes(value)) {
+              // Add custom skill to suggestions
+            }
+          }}
+          placeholder="Type and press Enter to add skill"
+          className="w-full"
         >
-          {commonSkills.map(skill => (
-            <Option key={skill} value={skill}>
-              <Tag color="blue">{skill}</Tag>
-            </Option>
+          <Input
+            size="large"
+            className="rounded-lg border-gray-300"
+            onPressEnter={(e: any) => {
+              handleSkillAdd(e.target.value);
+              e.target.value = "";
+            }}
+          />
+        </AutoComplete>
+        
+        <div className="mt-3 flex flex-wrap gap-2">
+          {skills.map((skill, index) => (
+            <Tag
+              key={index}
+              color="blue"
+              closable
+              onClose={() => handleSkillRemove(skill)}
+              className="px-3 py-1 text-sm font-medium"
+            >
+              {skill}
+            </Tag>
           ))}
-        </Select>
-      </Form.Item>
+          {skills.length === 0 && (
+            <div className="text-gray-400 text-sm italic">
+              No skills added yet
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="mb-6">
+        <label className="block text-sm font-semibold text-gray-700 mb-2">
+          Certifications
+        </label>
+        <AutoComplete
+          options={commonCertifications.map(cert => ({ value: cert }))}
+          onSelect={handleCertificationAdd}
+          onSearch={(value) => {
+            if (value && !commonCertifications.includes(value)) {
+              // Add custom certification to suggestions
+            }
+          }}
+          placeholder="Type and press Enter to add certification"
+          className="w-full"
+        >
+          <Input
+            size="large"
+            className="rounded-lg border-gray-300"
+            onPressEnter={(e: any) => {
+              handleCertificationAdd(e.target.value);
+              e.target.value = "";
+            }}
+          />
+        </AutoComplete>
+        
+        <div className="mt-3 flex flex-wrap gap-2">
+          {certifications.map((cert, index) => (
+            <Tag
+              key={index}
+              color="green"
+              closable
+              onClose={() => handleCertificationRemove(cert)}
+              className="px-3 py-1 text-sm font-medium"
+            >
+              {cert}
+            </Tag>
+          ))}
+          {certifications.length === 0 && (
+            <div className="text-gray-400 text-sm italic">
+              No certifications added yet
+            </div>
+          )}
+        </div>
+      </div>
 
       <Form.Item
-        label="Certifications"
-        name="certifications"
-        help="Select certifications or type new ones"
-      >
-        <Select
-          mode="tags"
-          size="large"
-          placeholder="Select or type certifications"
-          className="rounded-lg"
-          tokenSeparators={[',']}
-          showSearch
-        >
-          {commonCertifications.map(cert => (
-            <Option key={cert} value={cert}>
-              <Tag color="green">{cert}</Tag>
-            </Option>
-          ))}
-        </Select>
-      </Form.Item>
-
-      <Form.Item
-        label="Recent Activity Notes"
+        label={<span className="font-semibold">Recent Activity Notes</span>}
         name="recentActivity"
-        help="Add recent activity notes for timeline (optional)"
       >
         <TextArea 
           placeholder="e.g., Completed payment module API integration on 2024-03-25"
           rows={3}
-          className="rounded-lg"
+          className="rounded-lg border-gray-300"
         />
       </Form.Item>
 
       <Form.Item
-        label="Additional Notes"
+        label={<span className="font-semibold">Additional Notes</span>}
         name="notes"
-        help="Any additional notes or comments (optional)"
       >
         <TextArea 
           placeholder="Additional information about the intern..."
           rows={2}
-          className="rounded-lg"
+          className="rounded-lg border-gray-300"
         />
       </Form.Item>
     </>
   );
 
-  // Define the form sections
   const sections = [
     {
       key: "basic-info",
       title: "Basic Information",
       subtitle: "Update intern's personal and academic details",
-      color: "#8b5cf6",
+      color: "#7c3aed",
       content: basicInfoContent
     },
     {
       key: "assignment",
       title: "Assignment & Progress",
       subtitle: "Update mentor, project, and progress tracking",
-      color: "#10b981",
+      color: "#059669",
       content: assignmentContent
     },
     {
       key: "skills-certifications",
       title: "Skills & Certifications",
       subtitle: "Update technical skills and certifications",
-      color: "#f59e0b",
+      color: "#ea580c",
       content: skillsCertificationsContent
     }
   ];
@@ -446,7 +521,10 @@ export default function UpdateIntern() {
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">Loading intern data...</div>
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600 font-medium">Loading intern data...</p>
+        </div>
       </div>
     );
   }
@@ -459,9 +537,12 @@ export default function UpdateIntern() {
       submitText="Update Intern"
       cancelText="Cancel"
       onFinish={handleSubmit}
+      onCancel={handleCancel}
       form={form}
       sections={sections}
-      submitDisabled={!isFormValid}
+      submitDisabled={!isFormValid || saving}
+      loading={saving}
+      width="65%"
     />
   );
 }

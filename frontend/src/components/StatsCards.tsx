@@ -22,32 +22,32 @@ export default function StatsCards({
   cardWidth = "w-100" 
 }: StatsCardsProps) {
   return (
-    <div className={`flex justify-between gap-2 ${className}`}>
+    <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 ${className}`}>
       {stats.map((stat, index) => (
         <Card
           key={stat.title}
           className={`rounded-lg border border-gray-200 p-0 ${cardWidth}`}
           bodyStyle={{ 
-            padding: '10px 12px',
+            padding: '16px',
             width: '100%'
           }}
         >
           <div className="flex justify-between items-center h-full">
             <div className="flex-1">
-              <p className="text-xs text-gray-500 text-center">{stat.title}</p>
-              <p className="text-xl font-semibold text-gray-900 text-center my-1">
+              <p className="text-sm text-gray-500 text-center mb-1">{stat.title}</p>
+              <p className="text-2xl font-bold text-gray-900 text-center mb-1">
                 {stat.value}
               </p>
               {stat.description && (
-                <p className="text-[10px] text-gray-500 text-center">
+                <p className="text-xs text-gray-500 text-center">
                   {stat.description}
                 </p>
               )}
             </div>
             <div
-              className={`w-8 h-8 rounded-full ${stat.bgColor} flex items-center justify-center flex-shrink-0 ml-2`}
+              className={`w-10 h-10 rounded-full ${stat.bgColor} flex items-center justify-center flex-shrink-0 ml-3`}
             >
-              <span className={`text-base ${stat.color}`}>
+              <span className={`text-lg ${stat.color}`}>
                 {stat.icon}
               </span>
             </div>

@@ -8,7 +8,8 @@ import {
 import StatsCards from "../components/StatsCards";
 import ProjectCards from "../components/project/projectcard";
 import Filter from "../features/projects/Filter";
-import { api } from "../services/api";
+import { api } from "../lib/api";
+import { LoadingSkeleton } from "../components/LoadingSkeleton";
 
 export default function Home() {
   const [searchText, setSearchText] = useState("");
@@ -31,14 +32,14 @@ export default function Home() {
       setLoading(true);
       const [projects, analytics] = await Promise.all([
         api.getProjects(),
-        api.getAnalytics()
+        api.getAnalyticsSummary()
       ]);
       
-      const inProgress = projects.filter(p => p.stage === "In Progress").length;
-      const completed = projects.filter(p => p.stage === "Completed").length;
+      const inProgress = projects.data.filter((p: any) => p.status === "in-progress").length;
+      const completed = projects.data.filter((p: any) => p.status === "completed").length;
       
       setStats({
-        totalProjects: projects.length,
+        totalProjects: analytics.totalProjects,
         inProgress,
         completed,
         openIssues: analytics.openIssues
@@ -61,56 +62,58 @@ export default function Home() {
       title: "Total Projects",
       value: stats.totalProjects,
       icon: <ProjectOutlined />,
-      color: "text-gray-600",
-      bgColor: "bg-gray-50"
+      color: "text-gray-700",
+      bgColor: "bg-gray-100",
+      iconColor: "text-gray-600",
+      iconBgColor: "bg-gray-200"
     },
     {
       title: "In Progress",
       value: stats.inProgress,
       icon: <RiseOutlined />,
-      color: "text-blue-500",
-      bgColor: "bg-blue-50"
+      color: "text-blue-700",
+      bgColor: "bg-blue-100",
+      iconColor: "text-blue-600",
+      iconBgColor: "bg-blue-200"
     },
     {
       title: "Completed",
       value: stats.completed,
       icon: <CheckCircleOutlined />,
-      color: "text-green-500",
-      bgColor: "bg-green-50"
+      color: "text-green-700",
+      bgColor: "bg-green-100",
+      iconColor: "text-green-600",
+      iconBgColor: "bg-green-200"
     },
     {
       title: "Open Issues",
       value: stats.openIssues,
       icon: <ExclamationCircleOutlined />,
-      color: "text-red-500",
-      bgColor: "bg-red-50"
+      color: "text-red-700",
+      bgColor: "bg-red-100",
+      iconColor: "text-red-600",
+      iconBgColor: "bg-red-200"
     },
   ];
 
   if (loading) {
     return (
-      <div className="min-h-screen p-9 bg-gray-50 margin">
-        <div className="flex justify-between gap-2 mb-6">
-          {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="w-1/4 h-20 bg-gray-200 rounded-lg animate-pulse" />
-          ))}
-        </div>
-        <div className="bg-white p-4 rounded-lg border border-gray-200 animate-pulse h-16 mb-6" />
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {[1, 2, 3, 4, 5, 6].map((i) => (
-            <div key={i} className="h-64 bg-gray-200 rounded-lg animate-pulse" />
-          ))}
+      <div className="min-h-screen p-9 bg-gray-50">
+        <LoadingSkeleton type="stats" count={1} />
+        <div className="mt-6">
+          <LoadingSkeleton type="card" count={6} />
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen p-9 bg-gray-50 margin">    
+    <div className="min-h-screen p-9 bg-gray-50">    
       {/* Stats Cards for Overview */}
-      <div className="mb-6">
+      <div className="mb-8">
         <StatsCards stats={overviewStats} />
       </div>
+      
       {/* Filters */}
       <Filter 
         onSearchChange={setSearchText}

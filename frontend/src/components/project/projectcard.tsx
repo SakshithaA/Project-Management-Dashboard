@@ -1,4 +1,6 @@
-import { Card, Progress, Empty } from "antd";
+// components/project/ProjectCards.tsx
+import { useState, useEffect } from "react";
+import { Card, Progress, Tag, Avatar, Empty, Spin } from "antd";
 import { 
   TeamOutlined, 
   ClockCircleOutlined, 
@@ -6,26 +8,8 @@ import {
   CalendarOutlined
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
-import { useState, useEffect } from "react";
-import { api } from "../../services/api";
-
-export interface Project {
-  id: number;
-  title: string;
-  client: string;
-  progress: number;
-  members: number;
-  hoursAllocated: number;
-  issues: number;
-  startDate: string;
-  endDate: string;
-  color: string;
-  type: string;
-  stage: string;
-  budget?: number;
-  description?: string;
-  teamMemberIds?: number[];
-}
+import { useProjects } from "../../hooks/useProjects";
+import { LoadingSkeleton } from "../LoadingSkeleton";
 
 interface ProjectCardsProps {
   searchText?: string;
@@ -33,64 +17,31 @@ interface ProjectCardsProps {
   selectedStatuses?: string[];
 }
 
-// Export color functions with hex values for charts
-export const getStageColor = (stage: string) => {
-  switch(stage.toLowerCase()) {
-    case 'not started': return 'bg-gray-100 text-gray-700';
-    case 'in progress': return 'bg-blue-100 text-blue-700';
-    case 'on hold': return 'bg-yellow-100 text-yellow-700';
-    case 'cancelled': return 'bg-red-100 text-red-700';
-    case 'completed': return 'bg-green-100 text-green-700';
-    default: return 'bg-gray-100 text-gray-700';
-  }
-};
-
-export const getStageColorHex = (stage: string) => {
-  switch(stage.toLowerCase()) {
-    case 'not started': return '#6b7280';
-    case 'in progress': return '#3b82f6';
-    case 'on hold': return '#f59e0b';
-    case 'cancelled': return '#ef4444';
-    case 'completed': return '#10b981';
-    default: return '#6b7280';
-  }
-};
-
-export const getTypeColor = (type: string) => {
+const getTypeColor = (type: string) => {
   switch(type.toLowerCase()) {
-    case 'fullstack': return 'bg-blue-50 text-blue-600 border border-blue-200';
-    case 'data engineering': return 'bg-purple-50 text-purple-600 border border-purple-200';
-    case 'devops': return 'bg-green-50 text-green-600 border border-green-200';
-    case 'cloud': return 'bg-indigo-50 text-indigo-600 border border-indigo-200';
-    case 'mobile': return 'bg-pink-50 text-pink-600 border border-pink-200';
-    case 'frontend': return 'bg-cyan-50 text-cyan-600 border border-cyan-200';
-    case 'backend': return 'bg-orange-50 text-orange-600 border border-orange-200';
-    default: return 'bg-gray-50 text-gray-600 border border-gray-200';
+    case 'fullstack': return 'bg-blue-100 text-blue-800';
+    case 'data engineering': 
+    case 'data-engineering': return 'bg-purple-100 text-purple-800';
+    case 'devops': return 'bg-green-100 text-green-800';
+    case 'cloud': return 'bg-indigo-100 text-indigo-800';
+    case 'mobile': return 'bg-pink-100 text-pink-800';
+    case 'frontend': return 'bg-cyan-100 text-cyan-800';
+    case 'backend': return 'bg-orange-100 text-orange-800';
+    default: return 'bg-gray-100 text-gray-800';
   }
 };
 
-export const getTypeColorHex = (type: string) => {
-  switch(type.toLowerCase()) {
-    case 'fullstack': return '#3b82f6';
-    case 'data engineering': return '#8b5cf6';
-    case 'devops': return '#10b981';
-    case 'cloud': return '#6366f1';
-    case 'mobile': return '#ec4899';
-    case 'frontend': return '#06b6d4';
-    case 'backend': return '#f97316';
-    default: return '#6b7280';
-  }
-};
-
-const getColorClass = (color: string) => {
-  switch(color) {
-    case 'blue': return 'border-l-blue-500';
-    case 'purple': return 'border-l-purple-500';
-    case 'green': return 'border-l-green-500';
-    case 'indigo': return 'border-l-indigo-500';
-    case 'orange': return 'border-l-orange-500';
-    case 'cyan': return 'border-l-cyan-500';
-    default: return 'border-l-gray-500';
+const getStatusColor = (status: string) => {
+  switch(status.toLowerCase()) {
+    case 'not started': 
+    case 'not-started': return 'bg-gray-100 text-gray-800';
+    case 'in progress': 
+    case 'in-progress': return 'bg-blue-100 text-blue-800';
+    case 'on hold': 
+    case 'on-hold': return 'bg-yellow-100 text-yellow-800';
+    case 'cancelled': return 'bg-red-100 text-red-800';
+    case 'completed': return 'bg-green-100 text-green-800';
+    default: return 'bg-gray-100 text-gray-800';
   }
 };
 
@@ -100,56 +51,62 @@ export default function ProjectCards({
   selectedStatuses = [] 
 }: ProjectCardsProps) {
   const navigate = useNavigate();
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    fetchProjects();
-  }, []);
-
-  const fetchProjects = async () => {
-    try {
-      setLoading(true);
-      const data = await api.getProjects();
-      setProjects(data);
-    } catch (error) {
-      console.error('Error fetching projects:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { projects, loading, error } = useProjects();
 
   // Filter projects based on search text, selected types, and selected statuses
   const filteredProjects = projects.filter(project => {
     // Search filter
     const searchMatch = searchText === "" || 
-      project.title.toLowerCase().includes(searchText.toLowerCase()) ||
+      project.name.toLowerCase().includes(searchText.toLowerCase()) ||
       project.client.toLowerCase().includes(searchText.toLowerCase()) ||
-      project.type.toLowerCase().includes(searchText.toLowerCase());
+      project.type.toLowerCase().includes(searchText.toLowerCase()) ||
+      project.description.toLowerCase().includes(searchText.toLowerCase());
 
-    // Type filter
+    // Type filter - map UI types to API types
     const typeMatch = selectedTypes.length === 0 || 
-      selectedTypes.includes(project.type.toLowerCase());
+      selectedTypes.some(uiType => {
+        const apiType = uiType.replace(' ', '-');
+        return project.type.toLowerCase().includes(apiType.toLowerCase());
+      });
 
-    // Status filter
+    // Status filter - map UI statuses to API statuses
     const statusMatch = selectedStatuses.length === 0 || 
-      selectedStatuses.includes(project.stage.toLowerCase());
+      selectedStatuses.some(uiStatus => {
+        const apiStatus = uiStatus.replace(' ', '-');
+        return project.status.toLowerCase().includes(apiStatus.toLowerCase());
+      });
 
     return searchMatch && typeMatch && statusMatch;
   });
 
-  const handleCardClick = (projectId: number) => {
+  const handleCardClick = (projectId: string) => {
     navigate(`/project/${projectId}`);
   };
 
   if (loading) {
     return (
       <div className="mt-6 mx-5">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {[1, 2, 3].map((i) => (
-            <Card key={i} loading className="rounded-lg h-64" />
-          ))}
-        </div>
+        <LoadingSkeleton type="card" count={6} />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="mt-6 mx-5">
+        <Empty
+          description={
+            <div>
+              <p className="text-red-600">Error: {error}</p>
+              <button 
+                onClick={() => window.location.reload()}
+                className="mt-4 text-blue-600 hover:text-blue-800"
+              >
+                Try Again
+              </button>
+            </div>
+          }
+        />
       </div>
     );
   }
@@ -158,7 +115,7 @@ export default function ProjectCards({
     <div className="mt-6 mx-5">
       <div className="flex justify-between items-center mb-4">
         <h3 className="text-lg font-semibold text-gray-900">Projects</h3>
-        <span className="text-sm text-gray-500">
+        <span className="text-sm text-gray-600">
           Showing {filteredProjects.length} of {projects.length} projects
           {(searchText || selectedTypes.length > 0 || selectedStatuses.length > 0) && 
             " (filtered)"}
@@ -168,34 +125,39 @@ export default function ProjectCards({
       {filteredProjects.length === 0 ? (
         <Empty
           description={
-            <span className="text-gray-500">
+            <span className="text-gray-600">
               No projects match your filters
             </span>
           }
           className="py-12"
         />
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredProjects.map((project) => (
             <Card
               key={project.id}
-              className={`rounded-lg border border-gray-200 hover:shadow-md transition-shadow ${getColorClass(project.color)} border-l-4 cursor-pointer hover:border-blue-300`}
+              className="rounded-lg border border-gray-200 bg-white hover:shadow-lg transition-all duration-300 cursor-pointer hover:border-gray-300"
               bodyStyle={{ padding: '20px' }}
               onClick={() => handleCardClick(project.id)}
             >
               {/* Project Title & Client */}
               <div className="mb-4">
-                <h4 className="text-lg font-bold text-gray-900 mb-1">{project.title}</h4>
-                <p className="text-gray-500 text-sm">{project.client}</p>
+                <h4 className="text-lg font-bold text-gray-900 mb-2">{project.name}</h4>
+                <p className="text-gray-700 text-sm font-medium">{project.client}</p>
+                {project.description && (
+                  <p className="text-gray-600 text-sm mt-2 line-clamp-2">
+                    {project.description}
+                  </p>
+                )}
               </div>
 
-              {/* Project Type and Stage Tags */}
-              <div className="flex gap-2 mb-4">
-                <span className={`text-xs font-medium px-2 py-1 rounded ${getTypeColor(project.type)}`}>
-                  {project.type}
+              {/* Project Type and Status Tags */}
+              <div className="flex flex-wrap gap-2 mb-4">
+                <span className={`text-xs font-semibold px-3 py-1.5 rounded ${getTypeColor(project.type)}`}>
+                  {project.type.replace('-', ' ').toUpperCase()}
                 </span>
-                <span className={`text-xs font-medium px-2 py-1 rounded ${getStageColor(project.stage)}`}>
-                  {project.stage}
+                <span className={`text-xs font-semibold px-3 py-1.5 rounded ${getStatusColor(project.status)}`}>
+                  {project.status.replace('-', ' ').toUpperCase()}
                 </span>
               </div>
 
@@ -208,37 +170,38 @@ export default function ProjectCards({
                 <Progress 
                   percent={project.progress} 
                   showInfo={false}
-                  strokeColor="#3b82f6"
+                  strokeColor="#2563eb"
+                  strokeWidth={4}
                   className="mb-1"
                 />
               </div>
 
               {/* Stats */}
-              <div className="flex flex-wrap gap-3 mb-5">
-                <div className="flex items-center text-gray-600">
-                  <TeamOutlined className="mr-2 text-gray-400" />
-                  <span className="text-sm">{project.members} members</span>
+              <div className="flex flex-wrap gap-4 mb-5">
+                <div className="flex items-center text-gray-700">
+                  <TeamOutlined className="mr-2 text-gray-500" />
+                  <span className="text-sm font-medium">{project.teamMemberCount || 0} members</span>
                 </div>
-                <div className="flex items-center text-gray-600">
-                  <ClockCircleOutlined className="mr-2 text-gray-400" />
-                  <span className="text-sm">{project.hoursAllocated}h allocated</span>
+                <div className="flex items-center text-gray-700">
+                  <ClockCircleOutlined className="mr-2 text-gray-500" />
+                  <span className="text-sm font-medium">${Math.round((project.budget || 0) / 1000)}k</span>
                 </div>
-                <div className="flex items-center text-red-600">
-                  <ExclamationCircleOutlined className="mr-2 text-red-400" />
-                  <span className="text-sm font-medium">{project.issues} issues</span>
+                <div className="flex items-center text-gray-700">
+                  <ExclamationCircleOutlined className="mr-2 text-gray-500" />
+                  <span className="text-sm font-medium">{project.issueCount || 0} issues</span>
                 </div>
               </div>
 
               {/* Timeline */}
-              <div className="pt-4 border-t border-gray-100">
+              <div className="pt-4 border-t border-gray-200">
                 <div className="flex justify-between text-gray-600 text-sm">
                   <div className="flex items-center">
-                    <CalendarOutlined className="mr-2 text-gray-400" />
-                    <span>Start: {project.startDate}</span>
+                    <CalendarOutlined className="mr-2 text-gray-500" />
+                    <span>Start: {new Date(project.startDate).toLocaleDateString()}</span>
                   </div>
                   <div className="flex items-center">
-                    <CalendarOutlined className="mr-2 text-gray-400" />
-                    <span>End: {project.endDate}</span>
+                    <CalendarOutlined className="mr-2 text-gray-500" />
+                    <span>End: {new Date(project.endDate).toLocaleDateString()}</span>
                   </div>
                 </div>
               </div>

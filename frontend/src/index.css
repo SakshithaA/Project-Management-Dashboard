@@ -1,6 +1,140 @@
-@import "tailwindcss";
 
-.background {
-  @apply bg-gray-100 min-h-screen;
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import './styles/theme.css';
+/* Base styles */
+body {
+  @apply bg-gray-50 text-gray-900 font-sans;
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
 }
 
+/* Card styles */
+.card {
+  @apply bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-shadow duration-200;
+}
+
+.card-hover {
+  @apply hover:border-blue-300 hover:shadow-md transition-all duration-200;
+}
+
+/* Button styles */
+.btn-primary {
+  @apply bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-150;
+}
+
+.btn-secondary {
+  @apply bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium py-2 px-4 rounded-lg border border-gray-300 transition-colors duration-150;
+}
+
+.btn-danger {
+  @apply bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-150;
+}
+
+/* Form styles */
+.form-input {
+  @apply border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-150;
+}
+
+.form-label {
+  @apply block text-sm font-medium text-gray-700 mb-1;
+}
+
+/* Table styles */
+.table-container {
+  @apply overflow-x-auto rounded-lg border border-gray-200;
+}
+
+.table {
+  @apply min-w-full divide-y divide-gray-200;
+}
+
+.table-header {
+  @apply bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider;
+}
+
+.table-cell {
+  @apply px-4 py-3 text-sm text-gray-900;
+}
+
+/* Tag styles */
+.tag {
+  @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+}
+
+.tag-blue {
+  @apply bg-blue-100 text-blue-800;
+}
+
+.tag-green {
+  @apply bg-green-100 text-green-800;
+}
+
+.tag-red {
+  @apply bg-red-100 text-red-800;
+}
+
+.tag-purple {
+  @apply bg-purple-100 text-purple-800;
+}
+
+.tag-yellow {
+  @apply bg-yellow-100 text-yellow-800;
+}
+
+.tag-gray {
+  @apply bg-gray-100 text-gray-800;
+}
+
+/* Progress bar */
+.progress-bar {
+  @apply h-2 bg-gray-200 rounded-full overflow-hidden;
+}
+
+.progress-fill {
+  @apply h-full bg-blue-600 transition-all duration-300;
+}
+
+/* Loading skeleton */
+.skeleton {
+  @apply animate-pulse bg-gray-200 rounded;
+}
+
+/* Page container */
+.page-container {
+  @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6;
+}
+
+/* Section styles */
+.section-title {
+  @apply text-lg font-semibold text-gray-900 mb-4;
+}
+
+/* Empty state */
+.empty-state {
+  @apply text-center py-12;
+}
+
+.empty-state-icon {
+  @apply mx-auto h-12 w-12 text-gray-400;
+}
+
+.empty-state-title {
+  @apply mt-4 text-lg font-medium text-gray-900;
+}
+
+.empty-state-description {
+  @apply mt-2 text-sm text-gray-500;
+}
+
+/* Modal overlay */
+.modal-overlay {
+  @apply fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4;
+}
+
+.modal-content {
+  @apply bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-auto;
+}

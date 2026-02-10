@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Card, Progress, Tag, Avatar, Button, Divider, Tabs } from "antd";
+import { Card, Progress, Tag, Avatar, Button, Divider, Tabs, Spin, Alert } from "antd";
 import { 
   ArrowLeftOutlined,
   TeamOutlined,
@@ -8,68 +8,77 @@ import {
   ExclamationCircleOutlined,
   CheckCircleOutlined,
   InfoCircleOutlined,
-  EditOutlined
+  EditOutlined,
+  LoadingOutlined
 } from "@ant-design/icons";
-import { getTypeColor, getStageColor } from "./projectcard";
-import type { Project } from "./projectcard";
-import { useNavigate } from "react-router-dom";
-import { api } from "../../services/api";
-import type { TeamMember, Issue} from "../../services/api";
+import { useNavigate, useParams } from "react-router-dom";
+import { api } from "../../lib/api";
+import dayjs from "dayjs";
+import { LoadingSkeleton } from "../../components/LoadingSkeleton";
+
 const { TabPane } = Tabs;
 
-interface ProjectDetailProps {
-  projectId: number;
+interface TeamMember {
+  id: string;
+  name: string;
+  role: string;
+  hoursAllocated: number;
+  avatarColor?: string;
 }
 
-export default function ProjectDetail({ projectId }: ProjectDetailProps) {
+export default function ProjectDetail() {
   const navigate = useNavigate();
+  const { id } = useParams<{ id: string }>();
   const [activeTab, setActiveTab] = useState("team");
-  const [project, setProject] = useState<Project | null>(null);
+  const [project, setProject] = useState<any>(null);
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
-  const [issues, setIssues] = useState<Issue[]>([]);
+  const [issues, setIssues] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchProjectData();
-  }, [projectId]);
+    if (id) {
+      fetchProjectData();
+    }
+  }, [id]);
 
   const fetchProjectData = async () => {
     try {
       setLoading(true);
-      const [projectData, teamData, issuesData] = await Promise.all([
-        api.getProject(projectId),
-        api.getTeamMembers(projectId),
-        api.getIssues(projectId)
+      setError(null);
+      const [projectData, membersData, issuesData] = await Promise.all([
+        api.getProject(id!),
+        api.getProjectMembers(id!),
+        api.getProjectIssues(id!)
       ]);
       
       setProject(projectData);
-      setTeamMembers(teamData);
-      setIssues(issuesData);
-    } catch (error) {
-      console.error('Error fetching project data:', error);
+      setTeamMembers(membersData.data || []);
+      setIssues(issuesData.data || []);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load project data');
+      console.error('Error fetching project data:', err);
     } finally {
       setLoading(false);
     }
   };
 
-  // Handle Update Project button click
   const handleUpdateProject = () => {
     if (project) {
       navigate(`/update-project/${project.id}`, { state: { project } });
     }
   };
 
-  // Calculate timeline progress
   const calculateTimelineProgress = () => {
-    if (!project) return 50;
+    if (!project) return 0;
     
     try {
-      const startDate = new Date(project.startDate.split('/').reverse().join('-'));
-      const endDate = new Date(project.endDate.split('/').reverse().join('-'));
-      const today = new Date();
+      const startDate = dayjs(project.startDate);
+      const endDate = dayjs(project.endDate);
+      const today = dayjs();
       
-      const totalDuration = endDate.getTime() - startDate.getTime();
-      const elapsedDuration = today.getTime() - startDate.getTime();
+      const totalDuration = endDate.diff(startDate);
+      const elapsedDuration = today.diff(startDate);
       
       if (totalDuration <= 0) return 100;
       if (elapsedDuration <= 0) return 0;
@@ -81,61 +90,75 @@ export default function ProjectDetail({ projectId }: ProjectDetailProps) {
     }
   };
 
-  const timelineProgress = calculateTimelineProgress();
-
-  // Calculate days remaining
   const calculateDaysRemaining = () => {
     if (!project) return "Date calculation error";
     
     try {
-      const endDate = new Date(project.endDate.split('/').reverse().join('-'));
-      const today = new Date();
-      const timeDiff = endDate.getTime() - today.getTime();
-      const daysRemaining = Math.ceil(timeDiff / (1000 * 3600 * 24));
+      const endDate = dayjs(project.endDate);
+      const today = dayjs();
+      const daysRemaining = endDate.diff(today, 'day');
       return daysRemaining > 0 ? `${daysRemaining} days remaining` : "Deadline passed";
     } catch (error) {
       return "Date calculation error";
     }
   };
 
-  // Handle team member click
   const handleMemberClick = (member: TeamMember) => {
     navigate(`/team-member/${member.id}`, { 
       state: { 
         member,
-        projectTitle: project?.title,
+        projectTitle: project?.name,
         projectId: project?.id
       }
     });
   };
 
-  // Render content based on active tab
-  const renderTabContent = () => {
-    if (loading) {
-      return <div>Loading...</div>;
+  const getTypeColor = (type: string) => {
+    switch(type.toLowerCase()) {
+      case 'fullstack': return 'bg-blue-50 text-blue-700 border-blue-200';
+      case 'data-engineering': return 'bg-purple-50 text-purple-700 border-purple-200';
+      case 'devops': return 'bg-green-50 text-green-700 border-green-200';
+      case 'cloud': return 'bg-indigo-50 text-indigo-700 border-indigo-200';
+      case 'mobile': return 'bg-pink-50 text-pink-700 border-pink-200';
+      case 'frontend': return 'bg-cyan-50 text-cyan-700 border-cyan-200';
+      case 'backend': return 'bg-orange-50 text-orange-700 border-orange-200';
+      default: return 'bg-gray-50 text-gray-700 border-gray-200';
     }
+  };
 
+  const getStatusColor = (status: string) => {
+    switch(status.toLowerCase()) {
+      case 'not-started': return 'bg-gray-100 text-gray-800';
+      case 'in-progress': return 'bg-blue-100 text-blue-800';
+      case 'on-hold': return 'bg-yellow-100 text-yellow-800';
+      case 'cancelled': return 'bg-red-100 text-red-800';
+      case 'completed': return 'bg-green-100 text-green-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const renderTabContent = () => {
     switch(activeTab) {
       case "team":
         return (
           <div className="space-y-4">
-            {teamMembers.map((member) => (
+            {teamMembers.length > 0 ? teamMembers.map((member) => (
               <div 
                 key={member.id} 
-                className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition-colors cursor-pointer border border-gray-200 hover:border-blue-300"
+                className="flex items-center justify-between p-4 hover:bg-gray-50 rounded-lg transition-colors cursor-pointer border border-gray-200 hover:border-blue-300"
                 onClick={() => handleMemberClick(member)}
               >
                 <div className="flex items-center">
                   <Avatar 
                     size="large"
-                    style={{ backgroundColor: member.avatarColor }}
+                    style={{ backgroundColor: member.avatarColor || '#3b82f6' }}
                     className="mr-3"
                   >
                     {member.name.split(' ').map((n: string) => n[0]).join('')}
                   </Avatar>
                   <div className="ml-5">
                     <div className="font-medium text-gray-900">{member.name}</div>
-                    <div className="text-sm text-gray-500">{member.role}</div>
+                    <div className="text-sm text-gray-600">{member.role}</div>
                   </div>
                 </div>
                 <div className="text-right">
@@ -143,7 +166,12 @@ export default function ProjectDetail({ projectId }: ProjectDetailProps) {
                   <div className="text-sm text-gray-500">allocated</div>
                 </div>
               </div>
-            ))}
+            )) : (
+              <div className="text-center py-8 text-gray-500">
+                <TeamOutlined className="text-3xl text-gray-300 mb-3" />
+                <p>No team members assigned</p>
+              </div>
+            )}
           </div>
         );
       
@@ -159,7 +187,7 @@ export default function ProjectDetail({ projectId }: ProjectDetailProps) {
                       <div className="font-medium text-gray-900">{issue.title}</div>
                       <div className="text-sm text-gray-600 mt-1">{issue.description}</div>
                       <div className="text-xs text-gray-500 mt-2">
-                        Reported by: {issue.reporter} on {issue.reportedDate}
+                        Reported by: {issue.reportedBy} on {new Date(issue.reportedDate).toLocaleDateString()}
                       </div>
                       <div className="flex items-center gap-2 mt-2">
                         <Tag color={
@@ -169,15 +197,13 @@ export default function ProjectDetail({ projectId }: ProjectDetailProps) {
                         }>
                           {issue.status}
                         </Tag>
-                        {issue.priority && (
-                          <Tag color={
-                            issue.priority === 'critical' ? 'red' :
-                            issue.priority === 'high' ? 'orange' :
-                            issue.priority === 'medium' ? 'blue' : 'green'
-                          }>
-                            {issue.priority}
-                          </Tag>
-                        )}
+                        <Tag color={
+                          issue.priority === 'critical' ? 'red' :
+                          issue.priority === 'high' ? 'orange' :
+                          issue.priority === 'medium' ? 'blue' : 'green'
+                        }>
+                          {issue.priority}
+                        </Tag>
                       </div>
                     </div>
                   </div>
@@ -202,7 +228,7 @@ export default function ProjectDetail({ projectId }: ProjectDetailProps) {
                 <TeamOutlined className="text-gray-400 mr-2" />
                 <span className="text-sm text-gray-600">Team Members</span>
               </div>
-              <span className="font-medium">{project.members}</span>
+              <span className="font-medium">{teamMembers.length}</span>
             </div>
             <Divider className="my-2" />
             <div className="flex items-center justify-between">
@@ -210,7 +236,7 @@ export default function ProjectDetail({ projectId }: ProjectDetailProps) {
                 <ClockCircleOutlined className="text-gray-400 mr-2" />
                 <span className="text-sm text-gray-600">Total Hours</span>
               </div>
-              <span className="font-medium">{project.hoursAllocated}h</span>
+              <span className="font-medium">{teamMembers.reduce((sum, m) => sum + m.hoursAllocated, 0)}h</span>
             </div>
             <Divider className="my-2" />
             <div className="flex items-center justify-between">
@@ -218,16 +244,16 @@ export default function ProjectDetail({ projectId }: ProjectDetailProps) {
                 <ExclamationCircleOutlined className="text-gray-400 mr-2" />
                 <span className="text-sm text-gray-600">Open Issues</span>
               </div>
-              <span className="font-medium">{issues.length}</span>
+              <span className="font-medium">{issues.filter(i => i.status === 'open').length}</span>
             </div>
             <Divider className="my-2" />
             <div className="flex items-center justify-between">
               <div className="flex items-center">
                 <CalendarOutlined className="text-gray-400 mr-2" />
-                <span className="text-sm text-gray-600">Project Stage</span>
+                <span className="text-sm text-gray-600">Project Status</span>
               </div>
-              <span className={`font-medium px-2 py-1 rounded text-xs ${getStageColor(project.stage)}`}>
-                {project.stage}
+              <span className={`font-medium px-2 py-1 rounded text-xs ${getStatusColor(project.status)}`}>
+                {project.status.replace('-', ' ').toUpperCase()}
               </span>
             </div>
             <Divider className="my-2" />
@@ -237,7 +263,7 @@ export default function ProjectDetail({ projectId }: ProjectDetailProps) {
                 <span className="text-sm text-gray-600">Project Type</span>
               </div>
               <span className={`font-medium px-2 py-1 rounded text-xs ${getTypeColor(project.type)}`}>
-                {project.type}
+                {project.type.replace('-', ' ').toUpperCase()}
               </span>
             </div>
           </div>
@@ -248,19 +274,44 @@ export default function ProjectDetail({ projectId }: ProjectDetailProps) {
     }
   };
 
-  if (loading || !project) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 p-6">
-        <div className="text-center py-12">Loading...</div>
+        <LoadingSkeleton type="card" count={3} />
       </div>
     );
   }
 
-  return (
-    <div className="min-h-screen bg-gray-50 ">
-      {/* Navbar-like Back Bar */}
-      <div className="bg-white border-b border-gray-200 px-7 py-4">
+  if (error || !project) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-6">
         <div className="max-w-6xl mx-auto">
+          <Alert
+            message="Error Loading Project"
+            description={error || "Project not found"}
+            type="error"
+            showIcon
+            className="mb-4"
+          />
+          <Button 
+            icon={<ArrowLeftOutlined />}
+            onClick={() => navigate("/overview")}
+          >
+            Back to Dashboard
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  const timelineProgress = calculateTimelineProgress();
+  const daysRemaining = calculateDaysRemaining();
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Navbar-like Back Bar */}
+      <div className="bg-white border-b border-gray-300 px-7 py-4 shadow-sm">
+        <div className="max-w-6xl mx-auto flex justify-between items-center">
           <Button 
             type="text"
             icon={<ArrowLeftOutlined />}
@@ -270,167 +321,160 @@ export default function ProjectDetail({ projectId }: ProjectDetailProps) {
             Back to Dashboard
           </Button>
           <Button 
-              type="primary" 
-              icon={<EditOutlined />}
-              onClick={handleUpdateProject}
-              className="bg-blue-600 hover:bg-blue-700 align-middle float-right"
-            >
-              Update Project
-            </Button>
-          </div>
-        </div> 
+            type="primary" 
+            icon={<EditOutlined />}
+            onClick={handleUpdateProject}
+            className="bg-blue-600 hover:bg-blue-700 border-blue-600"
+          >
+            Update Project
+          </Button>
+        </div>
+      </div>
 
       {/* Project Content */}
-      <div className="p-6 mx-20">
-        <div className="max-w-6xl mx-auto">
+      <div className="p-6">
+        <div className="max-w-6xl mx-auto space-y-6">
           {/* Project Header */}
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">{project.title}</h1>
-            <p className="text-gray-500 text-lg">{project.client}</p>
+          <div className="mb-2">
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">{project.name}</h1>
+            <p className="text-gray-700 text-lg font-medium">{project.client}</p>
           </div>
 
-          <div className="lg:grid-cols-3 gap-6">
-            {/* Left Column - Project Info */}
-            <div className="lg:col-span-2 space-y-6">
-              {/* Project Tags */}
-              <div className="flex flex-wrap gap-2">
-                <Tag className={`text-sm font-medium px-3 py-1.5 ${getTypeColor(project.type)}`}>
-                  {project.type}
-                </Tag>
-                <Tag className={`text-sm font-medium px-3 py-1.5 ${getStageColor(project.stage)}`}>
-                  {project.stage}
-                </Tag>
-              </div>
-
-              {/* Project Description */}
-              <Card className="border border-gray-200 rounded-lg">
-                <p className="text-gray-700 text-sm align-center">{project.description || "Project description not available"}</p>
-              </Card>
-
-              {/* Progress Stats Boxes */}
-              <div className="grid grid-cols-3 gap-4 mt-4">
-                {/* Progress Box */}
-                <Card className="border border-gray-200 rounded-lg text-center">
-                  <div className="text-3xl font-bold text-gray-900 mb-2">{project.progress}%</div>
-                  <div className="text-sm text-gray-500">Progress</div>
-                  <Progress 
-                    percent={project.progress} 
-                    strokeColor="#3b82f6"
-                    strokeWidth={4}
-                    showInfo={false}
-                    className="mt-3"
-                  />
-                </Card>
-
-                {/* Team Size Box */}
-                <Card className="border border-gray-200 rounded-lg text-center">
-                  <div className="text-3xl font-bold text-gray-900 mb-2">{project.members}</div>
-                  <div className="text-sm text-gray-500">Team Size</div>
-                  <div className="mt-3">
-                    <TeamOutlined className="text-2xl text-blue-400" />
-                  </div>
-                </Card>
-
-                {/* Total Hours Box */}
-                <Card className="border border-gray-200 rounded-lg text-center">
-                  <div className="text-3xl font-bold text-gray-900 mb-2">{project.hoursAllocated}h</div>
-                  <div className="text-sm text-gray-500">Total Hours</div>
-                  <div className="mt-3">
-                    <ClockCircleOutlined className="text-2xl text-green-400" />
-                  </div>
-                </Card>
-              </div>
-
-              {/* Project Timeline */}
-              <Card 
-                title={
-                  <div className="flex items-center">
-                    <div className="w-2 h-2 bg-green-500 rounded-full mr-3"></div>
-                    <span className="text-lg font-semibold">Project Timeline</span>
-                  </div>
-                }
-                className="border border-gray-200 rounded-lg"
-              >
-                <div className="space-y-4 m-3">
-                  <div className="grid grid-cols-2 ">
-                    <div>
-                      <div className="text-sm text-gray-500 mb-1">Started</div>
-                      <div className="font-medium">{project.startDate}</div>
-                    </div>
-                    <div className="text-right mx-7">
-                      <div className="text-sm text-gray-500 mb-1 ">Deadline</div>
-                      <div className="font-medium">{project.endDate}</div>
-                    </div>
-                  </div>
-
-                  <div>
-                    <div className="flex justify-between text-sm text-gray-500 mb-2 ">
-                      <span className="m-0">{calculateDaysRemaining() }</span>
-                      <span className="mx-7">{timelineProgress}% of timeline elapsed</span>
-                    </div>
-                    <Progress 
-                      percent={timelineProgress} 
-                      strokeColor="#10b981"
-                      strokeWidth={6}
-                    />
-                  </div>
-                </div>
-              </Card>
-            </div>
-
-            {/* Right Column - Tabbed Interface */}
-            <div className="space-y-6 mt-6">
-              <Card 
-                className="border border-gray-200 rounded-lg"
-                bodyStyle={{ padding: 0 }}
-              >
-                {/* Tabs Header */}
-                <div className="border-b border-gray-200">
-                  <Tabs 
-                    activeKey={activeTab} 
-                    onChange={setActiveTab}
-                    centered
-                    className="px-4"
-                  >
-                    <TabPane 
-                      tab={
-                        <span className="flex items-center gap-2">
-                          <TeamOutlined />
-                          <span>Team Members</span>
-                          <Tag className="ml-1">{teamMembers.length}</Tag>
-                        </span>
-                      } 
-                      key="team"
-                    />
-                    <TabPane 
-                      tab={
-                        <span className="flex items-center gap-2">
-                          <ExclamationCircleOutlined />
-                          <span>Issues</span>
-                          <Tag className="ml-1">{issues.length}</Tag>
-                        </span>
-                      } 
-                      key="issues"
-                    />
-                    <TabPane 
-                      tab={
-                        <span className="flex items-center gap-2">
-                          <InfoCircleOutlined />
-                          <span>Overview</span>
-                        </span>
-                      } 
-                      key="overview"
-                    />
-                  </Tabs>
-                </div>
-
-                {/* Tab Content */}
-                <div className="p-4">
-                  {renderTabContent()}
-                </div>
-              </Card>
-            </div>
+          {/* Project Tags */}
+          <div className="flex flex-wrap gap-2">
+            <Tag className={`text-sm font-semibold px-3 py-1.5 ${getTypeColor(project.type)}`}>
+              {project.type.replace('-', ' ').toUpperCase()}
+            </Tag>
+            <Tag className={`text-sm font-semibold px-3 py-1.5 ${getStatusColor(project.status)}`}>
+              {project.status.replace('-', ' ').toUpperCase()}
+            </Tag>
           </div>
+
+          {/* Project Description */}
+          <Card className="border border-gray-300 rounded-lg shadow-sm">
+            <p className="text-gray-700 text-sm leading-relaxed">{project.description || "Project description not available"}</p>
+          </Card>
+
+          {/* Progress Stats Boxes - Now horizontal instead of grid */}
+          <div className="flex gap-4">
+            {/* Progress Box */}
+            <Card className="border border-gray-300 rounded-lg text-center shadow-sm flex-1">
+              <div className="text-3xl font-bold text-gray-900 mb-2">{project.progress}%</div>
+              <div className="text-sm text-gray-600 font-medium">Progress</div>
+              <Progress 
+                percent={project.progress} 
+                strokeColor="#2563eb"
+                strokeWidth={4}
+                showInfo={false}
+                className="mt-3"
+              />
+            </Card>
+
+            {/* Team Size Box */}
+            <Card className="border border-gray-300 rounded-lg text-center shadow-sm flex-1">
+              <div className="text-3xl font-bold text-gray-900 mb-2">{teamMembers.length}</div>
+              <div className="text-sm text-gray-600 font-medium">Team Size</div>
+              <div className="mt-3">
+                <TeamOutlined className="text-2xl text-blue-500" />
+              </div>
+            </Card>
+
+            {/* Budget Box */}
+            <Card className="border border-gray-300 rounded-lg text-center shadow-sm flex-1">
+              <div className="text-3xl font-bold text-gray-900 mb-2">${Math.round((project.budget || 0) / 1000)}k</div>
+              <div className="text-sm text-gray-600 font-medium">Budget</div>
+              <div className="mt-3">
+                <ClockCircleOutlined className="text-2xl text-green-500" />
+              </div>
+            </Card>
+          </div>
+
+          {/* Project Timeline */}
+          <Card 
+            title={
+              <div className="flex items-center">
+                <div className="w-2 h-2 bg-green-500 rounded-full mr-3"></div>
+                <span className="text-lg font-semibold text-gray-900">Project Timeline</span>
+              </div>
+            }
+            className="border border-gray-300 rounded-lg shadow-sm"
+          >
+            <div className="space-y-4 m-3">
+              <div className="grid grid-cols-2">
+                <div>
+                  <div className="text-sm text-gray-600 mb-1 font-medium">Started</div>
+                  <div className="font-medium text-gray-900">{new Date(project.startDate).toLocaleDateString()}</div>
+                </div>
+                <div className="text-right mx-7">
+                  <div className="text-sm text-gray-600 mb-1 font-medium">Deadline</div>
+                  <div className="font-medium text-gray-900">{new Date(project.endDate).toLocaleDateString()}</div>
+                </div>
+              </div>
+
+              <div>
+                <div className="flex justify-between text-sm text-gray-600 mb-2">
+                  <span className="m-0 font-medium">{daysRemaining}</span>
+                  <span className="mx-7 font-medium">{timelineProgress}% of timeline elapsed</span>
+                </div>
+                <Progress 
+                  percent={timelineProgress} 
+                  strokeColor="#059669"
+                  strokeWidth={6}
+                />
+              </div>
+            </div>
+          </Card>
+
+          {/* Tabbed Interface - Takes full width like above components */}
+          <Card 
+            className="border border-gray-300 rounded-lg shadow-sm"
+            bodyStyle={{ padding: 0 }}
+          >
+            {/* Tabs Header */}
+            <div className="border-b border-gray-300">
+              <Tabs 
+                activeKey={activeTab} 
+                onChange={setActiveTab}
+                centered
+                className="px-4"
+              >
+                <TabPane 
+                  tab={
+                    <span className="flex items-center gap-2">
+                      <TeamOutlined />
+                      <span>Team Members</span>
+                      <Tag className="ml-1 bg-blue-100 text-blue-700">{teamMembers.length}</Tag>
+                    </span>
+                  } 
+                  key="team"
+                />
+                <TabPane 
+                  tab={
+                    <span className="flex items-center gap-2">
+                      <ExclamationCircleOutlined />
+                      <span>Issues</span>
+                      <Tag className="ml-1 bg-red-100 text-red-700">{issues.length}</Tag>
+                    </span>
+                  } 
+                  key="issues"
+                />
+                <TabPane 
+                  tab={
+                    <span className="flex items-center gap-2">
+                      <InfoCircleOutlined />
+                      <span>Overview</span>
+                    </span>
+                  } 
+                  key="overview"
+                />
+              </Tabs>
+            </div>
+
+            {/* Tab Content */}
+            <div className="p-4">
+              {renderTabContent()}
+            </div>
+          </Card>
         </div>
       </div>
     </div>

@@ -1,10 +1,11 @@
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom'
-import Navbar from './components/Navbar'
-import Home from './pages/Home'
-import Analytics from './pages/Analytics'
-import POCCards from './pages/POCs'
-import AddProject from './pages/forms/AddProject'
-import AddPOC from './pages/forms/AddPOC'
+// App.tsx
+import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import Navbar from './components/Navbar';
+import Home from './pages/Home';
+import Analytics from './pages/Analytics';
+import POCCards from './pages/POCs';
+import AddProject from './pages/forms/AddProject';
+import AddPOC from './pages/forms/AddPOC';
 import ProjectDetailPage from './pages/ProjectDetailPage';
 import ReportGenerate from './pages/ReportGeneration';
 import TeamMemberDetail from './components/employee_details/TeamMemberDetail';
@@ -14,35 +15,37 @@ import UpdateTeamMember from './pages/forms/UpdateTeamMember';
 import UpdateProject from './pages/forms/UpdateProject';
 import POCDetails from './pages/POCDetails';
 import UpdatePOC from './pages/forms/UpdatePOC';
-import './App.css'
-
+import { ErrorBoundary } from './components/ErrorBoundary';
+import './App.css';
 
 export default function App() {
   return (
     <Router>
-      <div className="bg-gray-50 min-h-screen">
-        <Navbar />
-        <div className="px-0 py-0">
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/overview" element={<Home />} />
-            <Route path="/analytics" element={<Analytics />} />
-            <Route path="/pocs" element={<POCCards />} />
-            <Route path="/addproject" element={<AddProject />}/>
-            <Route path="/addpoc" element={<AddPOC />}/>
-            <Route path="/project/:id" element={<ProjectDetailPage />} />
-            <Route path="/team-member/:id" element={<TeamMemberDetail />} />
-            <Route path="/report" element={<ReportGenerate />} />
-            <Route path="/intern/:id" element={<InternDetail />} />
-            <Route path="/add-poc" element={<AddPOC />} />
-            <Route path="/intern/:id/edit" element={<UpdateIntern />} />
-            <Route path="/team-member/:id/edit" element={<UpdateTeamMember />} />
-            <Route path="/update-project/:id" element={<UpdateProject />} />
-            <Route path="/poc/:id" element={<POCDetails />} />
-            <Route path="/update-poc/:id" element={<UpdatePOC />} />
-          </Routes>
+      <ErrorBoundary>
+        <div className="bg-gray-50 min-h-screen">
+          <Navbar />
+          <div className="px-0 py-0">
+            <Routes>
+              <Route path="/" element={<Home />} />
+              <Route path="/overview" element={<Home />} />
+              <Route path="/analytics" element={<Analytics />} />
+              <Route path="/pocs" element={<POCCards />} />
+              <Route path="/addproject" element={<AddProject />} />
+              <Route path="/addpoc" element={<AddPOC />} />
+              <Route path="/project/:id" element={<ProjectDetailPage />} />
+              <Route path="/team-member/:id" element={<TeamMemberDetail />} />
+              <Route path="/report" element={<ReportGenerate />} />
+              <Route path="/intern/:id" element={<InternDetail />} />
+              <Route path="/add-poc" element={<AddPOC />} />
+              <Route path="/intern/:id/edit" element={<UpdateIntern />} />
+              <Route path="/team-member/:id/edit" element={<UpdateTeamMember />} />
+              <Route path="/update-project/:id" element={<UpdateProject />} />
+              <Route path="/poc/:id" element={<POCDetails />} />
+              <Route path="/update-poc/:id" element={<UpdatePOC />} />
+            </Routes>
+          </div>
         </div>
-      </div>
+      </ErrorBoundary>
     </Router>
-  )
+  );
 }

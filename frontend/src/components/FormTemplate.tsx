@@ -24,6 +24,8 @@ interface FormTemplateProps {
   extraActions?: ReactNode;
   initialValues?: any;
   submitDisabled?: boolean;
+  loading?: boolean;
+  width?: string;
 }
 
 export default function FormTemplate({
@@ -38,7 +40,9 @@ export default function FormTemplate({
   sections,
   extraActions,
   initialValues,
-  submitDisabled = false
+  submitDisabled = false,
+  loading = false,
+  width = "65%"
 }: FormTemplateProps) {
   const navigate = useNavigate();
 
@@ -51,81 +55,89 @@ export default function FormTemplate({
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 m-0 font-sansation">
-      {/* Navbar-like Back Bar */}
-      <div className="bg-white border-b border-gray-200 px-0 py-4 m-0">
-        <div className="max-w-4xl mx-auto">
-          <Button 
-            type="text"
-            icon={<ArrowLeftOutlined />}
-            onClick={() => navigate(backPath)}
-            className="text-gray-600 hover:text-gray-900 hover:bg-gray-100 px-3 py-2 rounded-lg transition-colors duration-150 font-sansation"
-          >
-            Back to Dashboard
-          </Button>
-        </div>
-      </div>
-
-      {/* Form Content */}
-      <div className="p-7">
-        <div className="max-w-4xl mx-auto">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-black bg-opacity-50">
+      <div className="flex min-h-full items-center justify-center p-4">
+        <div 
+          className="relative bg-white rounded-lg shadow-xl w-full"
+          style={{ maxWidth: width }}
+        >
           {/* Header */}
-          <div className="mb-8">
-            <Title level={2} className="font-sansation text-gray-900 mb-2">
-              {title}
-            </Title>
-            <p className="text-gray-500 font-sansation">{subtitle}</p>
+          <div className="sticky top-0 z-10 bg-white border-b border-gray-300 px-6 py-4 rounded-t-lg">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Button 
+                  type="text"
+                  icon={<ArrowLeftOutlined />}
+                  onClick={handleCancel}
+                  className="text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+                />
+                <div>
+                  <Title level={3} className="text-gray-900 mb-1">
+                    {title}
+                  </Title>
+                  <p className="text-gray-700 text-sm font-medium">{subtitle}</p>
+                </div>
+              </div>
+            </div>
           </div>
 
-          <Form
-            form={form}
-            layout="vertical"
-            onFinish={onFinish}
-            initialValues={initialValues}
-          >
-            {/* Dynamic Sections */}
-            {sections.map((section) => (
-              <Card 
-                key={section.key}
-                title={
-                  <div className="flex items-center">
+          {/* Form Content */}
+          <div className="p-6 max-h-[calc(90vh-80px)] overflow-y-auto">
+            <Form
+              form={form}
+              layout="vertical"
+              onFinish={onFinish}
+              initialValues={initialValues}
+              disabled={loading}
+            >
+              {/* Dynamic Sections */}
+              {sections.map((section) => (
+                <Card 
+                  key={section.key}
+                  className="mb-6 border border-gray-300 rounded-lg shadow-sm last:mb-0"
+                >
+                  <div className="flex items-center mb-4">
                     <div 
-                      className="w-3 h-3 rounded-full mr-3"
+                      className="w-3 h-3 rounded-full mr-3 shadow-sm"
                       style={{ backgroundColor: section.color }}
                     ></div>
-                    <span className="text-lg font-semibold font-sansation">{section.title}</span>
+                    <div>
+                      <h4 className="text-lg font-semibold text-gray-900">{section.title}</h4>
+                      <p className="text-gray-600 text-sm font-medium">{section.subtitle}</p>
+                    </div>
                   </div>
-                }
-                className="mb-6 border border-gray-200 rounded-lg"
-              >
-                <p className="text-gray-500 mb-6 -mt-2 font-sansation">{section.subtitle}</p>
-                <div className="space-y-6">
-                  {section.content}
-                </div>
-              </Card>
-            ))}
+                  <div className="space-y-5">
+                    {section.content}
+                  </div>
+                </Card>
+              ))}
 
-            {/* Action Buttons */}
-            <div className="flex justify-end items-center pt-6 border-t border-gray-200 gap-2">
-              {extraActions}
-              <Button
-                size="large"
-                onClick={handleCancel}
-                className="font-sansation rounded-lg"
-              >
-                {cancelText}
-              </Button>
-              <Button
-                type="primary"
-                htmlType="submit"
-                size="large"
-                className="font-sansation rounded-lg"
-                disabled={submitDisabled}
-              >
-                {submitText}
-              </Button>
-            </div>
-          </Form>
+              {/* Action Buttons */}
+              <div className="sticky bottom-0 bg-white pt-6 border-t border-gray-300 -mx-6 px-6">
+                <div className="flex justify-end items-center gap-3">
+                  {extraActions}
+                  <Button
+                    size="large"
+                    onClick={handleCancel}
+                    className="font-medium border-gray-300 hover:border-gray-400 text-gray-700 hover:text-gray-900"
+                    disabled={loading}
+                  >
+                    {cancelText}
+                  </Button>
+                  <Button
+                    type="primary"
+                    htmlType="submit"
+                    size="large"
+                    className="font-medium bg-blue-600 hover:bg-blue-700 border-blue-600"
+                    disabled={submitDisabled || loading}
+                    loading={loading}
+                  >
+                    {submitText}
+                  </Button>
+                </div>
+              </div>
+            </Form>
+          </div>
         </div>
       </div>
     </div>

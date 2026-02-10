@@ -1,24 +1,26 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Form, Input, Select, InputNumber, Avatar, Tag, message } from "antd";
-import { UserOutlined, MailOutlined, EnvironmentOutlined, TeamOutlined } from "@ant-design/icons";
+import { Form, Input, Select, InputNumber, Avatar, Tag, message, AutoComplete, Button } from "antd";
+import { UserOutlined, MailOutlined, EnvironmentOutlined, TeamOutlined, DatabaseOutlined } from "@ant-design/icons";
 import FormTemplate from "../../components/FormTemplate";
-import { api } from "../../services/api";
+import { api } from "../../lib/api";
 
 const { Option } = Select;
 
 export default function UpdateTeamMember() {
   const navigate = useNavigate();
-  const { id } = useParams();
+  const { id } = useParams<{ id: string }>();
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [isFormValid, setIsFormValid] = useState(false);
   const [memberData, setMemberData] = useState<any>(null);
   const [projects, setProjects] = useState<any[]>([]);
-  const [allTeamMembers, setAllTeamMembers] = useState<any[]>([]);
   const [interns, setInterns] = useState<any[]>([]);
+  const [skills, setSkills] = useState<string[]>([]);
+  const [selectedProjects, setSelectedProjects] = useState<string[]>([]);
+  const [selectedInterns, setSelectedInterns] = useState<string[]>([]);
 
-  // Departments list
   const departments = [
     "Engineering",
     "Product", 
@@ -30,34 +32,33 @@ export default function UpdateTeamMember() {
     "Mobile Development"
   ];
 
-  // Job titles/Roles list
-  const jobTitles = [
-    "Lead Developer & Mentor",
-    "Senior Developer",
-    "Lead Developer", 
-    "Technical Lead",
-    "Architect",
-    "Engineering Manager",
-    "Product Manager",
-    "QA Lead"
+  const userRoles = [
+    { value: "manager", label: "Manager" },
+    { value: "team-lead", label: "Team Lead" },
+    { value: "developer", label: "Developer" },
+    { value: "intern", label: "Intern" }
   ];
 
-  // Status options
-  const statusOptions = [
-    { value: "active", label: "Active", color: "green" },
-    { value: "on-leave", label: "On Leave", color: "orange" },
-    { value: "inactive", label: "Inactive", color: "red" }
-  ];
-
-  // Avatar colors
   const avatarColors = [
-    "#3b82f6", "#10b981", "#8b5cf6", "#f59e0b",
-    "#ef4444", "#06b6d4", "#ec4899", "#84cc16"
+    { value: "#2563eb", label: "Blue" },
+    { value: "#059669", label: "Green" },
+    { value: "#7c3aed", label: "Purple" },
+    { value: "#ea580c", label: "Orange" },
+    { value: "#dc2626", label: "Red" },
+    { value: "#0891b2", label: "Cyan" },
+    { value: "#db2777", label: "Pink" },
+    { value: "#84cc16", label: "Lime" }
+  ];
+
+  const commonSkills = [
+    "React", "Node.js", "TypeScript", "Python", "Java", "SQL", "Git",
+    "Docker", "AWS", "Azure", "GCP", "Kubernetes", "MongoDB", "PostgreSQL",
+    "GraphQL", "Vue.js", "Angular", "Flutter", "React Native", "Machine Learning"
   ];
 
   useEffect(() => {
     if (id) {
-      fetchMemberData(parseInt(id));
+      fetchMemberData();
       fetchAllData();
     }
   }, [id]);
@@ -77,46 +78,44 @@ export default function UpdateTeamMember() {
 
   const fetchAllData = async () => {
     try {
-      const [projectsData, teamMembersData, internsData] = await Promise.all([
+      const [projectsData, teamMembersData] = await Promise.all([
         api.getProjects(),
-        api.getAllTeamMembers(),
-        api.getAllInterns()
+        api.getTeamMembers({ userRole: 'intern' })
       ]);
-      setProjects(projectsData);
-      setAllTeamMembers(teamMembersData);
-      setInterns(internsData);
+      setProjects(projectsData.data);
+      setInterns(teamMembersData.data);
     } catch (error) {
       console.error('Error fetching data:', error);
       message.error('Failed to load data');
     }
   };
 
-  const fetchMemberData = async (memberId: number) => {
+  const fetchMemberData = async () => {
     try {
       setLoading(true);
-      const data = await api.getTeamMember(memberId);
+      const data = await api.getTeamMember(id!);
+      
       if (data) {
         setMemberData(data);
+        setSkills(data.skills || []);
+        setSelectedProjects(data.projects?.map((p: any) => p.projectId) || []);
         
-        // Get member's projects
-        const memberProjects = await api.getProjectsByTeamMember(memberId);
-        
+        // Fetch intern assignments for LC
+        if (data.isLC) {
+          const internAssignments = await api.getInternAssignments(id!);
+          setSelectedInterns(internAssignments.data.map((ia: any) => ia.internId));
+        }
+
         form.setFieldsValue({
           name: data.name,
-          jobTitle: data.jobTitle || data.role,
           email: data.email || '',
-          department: data.department || 'Engineering',
-          workload: data.workload || 0,
-          hoursAllocated: data.hoursAllocated || 40,
-          activeProjects: data.activeProjects || 0,
-          activePOCs: data.activePOCs || 0,
-          certifications: data.certifications || 0,
-          hasInterns: data.hasInterns || false,
-          avatarColor: data.avatarColor || '#3b82f6',
-          // Project assignments
-          projectIds: data.projectIds || memberProjects.map(p => p.id),
-          // Intern assignments
-          internIds: data.internIds || []
+          userRole: data.userRole,
+          isLC: data.isLC,
+          workloadPercentage: data.workloadPercentage || 0,
+          joinDate: data.joinDate ? data.joinDate : undefined,
+          avatarColor: "#2563eb", // Default color
+          projectIds: data.projects?.map((p: any) => p.projectId) || [],
+          internIds: data.isLC ? selectedInterns : []
         });
       }
     } catch (error) {
@@ -127,61 +126,87 @@ export default function UpdateTeamMember() {
     }
   };
 
+  const handleSkillAdd = (skill: string) => {
+    if (skill && !skills.includes(skill)) {
+      setSkills([...skills, skill]);
+    }
+  };
+
+  const handleSkillRemove = (skill: string) => {
+    setSkills(skills.filter(s => s !== skill));
+  };
+
   const handleSubmit = async (values: any) => {
     if (!isFormValid || !id) return;
 
     try {
-      console.log('Updating team member:', values);
+      setSaving(true);
       
-      // Here you would typically update the JSON data
-      // For now, just show success
+      const updateData = {
+        name: values.name,
+        email: values.email,
+        userRole: values.userRole,
+        isLC: values.isLC,
+        workloadPercentage: values.workloadPercentage,
+        joinDate: values.joinDate,
+        skills: skills
+      };
+
+      await api.updateTeamMember(id, updateData);
+      
+      // Update LC assignments if member is LC
+      if (values.isLC && selectedInterns.length > 0) {
+        await api.updateInternAssignments(id, { internIds: selectedInterns });
+      }
+      
       message.success('Team member updated successfully!');
+      setTimeout(() => {
+        navigate(`/team-member/${id}`);
+      }, 1500);
       
-      await new Promise(resolve => setTimeout(resolve, 500));
-      navigate(`/team-member/${id}`);
     } catch (error) {
       console.error('Error updating team member:', error);
       message.error('Failed to update team member');
+    } finally {
+      setSaving(false);
     }
   };
 
-  // Filter interns that don't already have this mentor
-  const availableInterns = interns.filter(intern => 
-    !memberData?.internIds?.includes(intern.id) || intern.mentorId === parseInt(id || '0')
-  );
+  const handleCancel = () => {
+    navigate(`/team-member/${id}`);
+  };
 
-  // Basic Information Section
   const basicInfoContent = (
     <>
       <div className="flex items-center mb-6">
         <Avatar 
           size={80}
-          style={{ backgroundColor: memberData?.avatarColor || '#3b82f6' }}
-          className="mr-4"
+          style={{ backgroundColor: form.getFieldValue('avatarColor') || '#2563eb' }}
+          className="mr-4 shadow-sm"
         >
           {memberData?.name?.split(' ').map((n: string) => n[0]).join('')}
         </Avatar>
         <div>
-          <h3 className="text-lg font-semibold">{memberData?.name || 'Team Member'}</h3>
-          <p className="text-gray-500">Member ID: {id}</p>
+          <h3 className="text-lg font-semibold text-gray-900">{memberData?.name || 'Team Member'}</h3>
+          <p className="text-gray-600 text-sm font-medium">Member ID: {id}</p>
         </div>
       </div>
 
       <Form.Item
-        label="Full Name"
+        label={<span className="font-semibold">Full Name</span>}
         name="name"
         rules={[{ required: true, message: 'Please enter full name' }]}
       >
         <Input 
           placeholder="Sarah Johnson" 
           size="large"
-          className="rounded-lg"
+          className="rounded-lg border-gray-300"
           prefix={<UserOutlined className="text-gray-400" />}
         />
       </Form.Item>
 
       <Form.Item
-        label="Email"
+        label={<span className="font-semibold">Email</span>}
         name="email"
         rules={[
           { required: true, message: 'Please enter email' },
@@ -191,191 +216,200 @@ export default function UpdateTeamMember() {
         <Input 
           placeholder="sarah.johnson@company.com" 
           size="large"
-          className="rounded-lg"
+          className="rounded-lg border-gray-300"
           prefix={<MailOutlined className="text-gray-400" />}
         />
       </Form.Item>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <Form.Item
-          label="Job Title"
-          name="jobTitle"
-          rules={[{ required: true, message: 'Please select job title' }]}
+          label={<span className="font-semibold">User Role</span>}
+          name="userRole"
+          rules={[{ required: true, message: 'Please select user role' }]}
         >
           <Select 
-            placeholder="Lead Developer & Mentor" 
+            placeholder="Select role" 
             size="large"
-            className="rounded-lg"
-            showSearch
+            className="rounded-lg border-gray-300"
           >
-            {jobTitles.map(title => (
-              <Option key={title} value={title}>{title}</Option>
+            {userRoles.map(role => (
+              <Option key={role.value} value={role.value}>{role.label}</Option>
             ))}
           </Select>
         </Form.Item>
 
         <Form.Item
-          label="Department"
-          name="department"
-          rules={[{ required: true, message: 'Please select department' }]}
-        >
-          <Select 
-            placeholder="Full Stack Development" 
-            size="large"
-            className="rounded-lg"
-            showSearch
-          >
-            {departments.map(dept => (
-              <Option key={dept} value={dept}>{dept}</Option>
-            ))}
-          </Select>
-        </Form.Item>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Form.Item
-          label="Avatar Color"
+          label={<span className="font-semibold">Avatar Color</span>}
           name="avatarColor"
-          rules={[{ required: true, message: 'Please select avatar color' }]}
         >
           <Select 
             placeholder="Select color" 
             size="large"
-            className="rounded-lg"
+            className="rounded-lg border-gray-300"
           >
             {avatarColors.map(color => (
-              <Option key={color} value={color}>
+              <Option key={color.value} value={color.value}>
                 <div className="flex items-center">
                   <div 
-                    className="w-4 h-4 rounded-full mr-2"
-                    style={{ backgroundColor: color }}
+                    className="w-4 h-4 rounded-full mr-2 border border-gray-300"
+                    style={{ backgroundColor: color.value }}
                   ></div>
-                  <span>{color}</span>
+                  <span className="font-medium">{color.label}</span>
                 </div>
               </Option>
             ))}
           </Select>
         </Form.Item>
+      </div>
 
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <Form.Item
-          label="Status"
-          name="status"
-          rules={[{ required: true, message: 'Please select status' }]}
+          label={<span className="font-semibold">Is Learning Catalyst?</span>}
+          name="isLC"
+          valuePropName="checked"
         >
           <Select 
-            placeholder="Select status" 
+            placeholder="Select option" 
             size="large"
-            className="rounded-lg"
+            className="rounded-lg border-gray-300"
           >
-            {statusOptions.map(status => (
-              <Option key={status.value} value={status.value}>
-                <Tag color={status.color}>{status.label}</Tag>
-              </Option>
-            ))}
+            <Option value={true}>Yes</Option>
+            <Option value={false}>No</Option>
           </Select>
+        </Form.Item>
+
+        <Form.Item
+          label={<span className="font-semibold">Join Date</span>}
+          name="joinDate"
+        >
+          <Input 
+            type="date"
+            size="large"
+            className="rounded-lg border-gray-300"
+          />
         </Form.Item>
       </div>
     </>
   );
 
-  // Workload & Projects Section
-  const workloadProjectsContent = (
+  const skillsWorkloadContent = (
     <>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Form.Item
-          label="Workload (%)"
-          name="workload"
-          rules={[
-            { required: true, message: 'Please enter workload' },
-            { type: 'number', min: 0, max: 100, message: 'Workload must be between 0 and 100' }
-          ]}
+      <div className="mb-6">
+        <label className="block text-sm font-semibold text-gray-700 mb-2">
+          Technical Skills
+        </label>
+        <AutoComplete
+          options={commonSkills.map(skill => ({ value: skill }))}
+          onSelect={handleSkillAdd}
+          onSearch={(value) => {
+            if (value && !commonSkills.includes(value)) {
+              // Add custom skill to suggestions
+            }
+          }}
+          placeholder="Type and press Enter to add skill"
+          className="w-full"
         >
-          <InputNumber
-            min={0}
-            max={100}
-            placeholder="85"
+          <Input
             size="large"
-            className="w-full rounded-lg"
-            addonAfter="%"
+            className="rounded-lg border-gray-300"
+            onPressEnter={(e: any) => {
+              handleSkillAdd(e.target.value);
+              e.target.value = "";
+            }}
           />
-        </Form.Item>
-
-        <Form.Item
-          label="Hours Allocated"
-          name="hoursAllocated"
-          rules={[
-            { required: true, message: 'Please enter allocated hours' },
-            { type: 'number', min: 0, max: 168, message: 'Hours must be between 0 and 168' }
-          ]}
-        >
-          <InputNumber
-            min={0}
-            max={168}
-            placeholder="40"
-            size="large"
-            className="w-full rounded-lg"
-            addonAfter="hours"
-          />
-        </Form.Item>
+        </AutoComplete>
+        
+        <div className="mt-3 flex flex-wrap gap-2">
+          {skills.map((skill, index) => (
+            <Tag
+              key={index}
+              color="blue"
+              closable
+              onClose={() => handleSkillRemove(skill)}
+              className="px-3 py-1 text-sm font-medium"
+            >
+              {skill}
+            </Tag>
+          ))}
+          {skills.length === 0 && (
+            <div className="text-gray-400 text-sm italic">
+              No skills added yet
+            </div>
+          )}
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <Form.Item
+        label={<span className="font-semibold">Workload (%)</span>}
+        name="workloadPercentage"
+        rules={[
+          { required: true, message: 'Please enter workload percentage' },
+          { type: 'number', min: 0, max: 100, message: 'Workload must be between 0 and 100' }
+        ]}
+      >
+        <InputNumber
+          min={0}
+          max={100}
+          placeholder="85"
+          size="large"
+          className="w-full rounded-lg border-gray-300"
+          addonAfter="%"
+        />
+      </Form.Item>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Form.Item
-          label="Active Projects"
+          label={<span className="font-semibold">Active Projects</span>}
           name="activeProjects"
-          rules={[
-            { type: 'number', min: 0, message: 'Must be 0 or more' }
-          ]}
         >
           <InputNumber
             min={0}
-            placeholder="1"
+            placeholder="3"
             size="large"
-            className="w-full rounded-lg"
+            className="w-full rounded-lg border-gray-300"
           />
         </Form.Item>
 
         <Form.Item
-          label="Active POCs"
+          label={<span className="font-semibold">Active POCs</span>}
           name="activePOCs"
-          rules={[
-            { type: 'number', min: 0, message: 'Must be 0 or more' }
-          ]}
-        >
-          <InputNumber
-            min={0}
-            placeholder="1"
-            size="large"
-            className="w-full rounded-lg"
-          />
-        </Form.Item>
-
-        <Form.Item
-          label="Certifications"
-          name="certifications"
-          rules={[
-            { type: 'number', min: 0, message: 'Must be 0 or more' }
-          ]}
         >
           <InputNumber
             min={0}
             placeholder="2"
             size="large"
-            className="w-full rounded-lg"
+            className="w-full rounded-lg border-gray-300"
+          />
+        </Form.Item>
+
+        <Form.Item
+          label={<span className="font-semibold">Certifications</span>}
+          name="certifications"
+        >
+          <InputNumber
+            min={0}
+            placeholder="5"
+            size="large"
+            className="w-full rounded-lg border-gray-300"
           />
         </Form.Item>
       </div>
+    </>
+  );
 
+  const assignmentsContent = (
+    <>
       <Form.Item
-        label="Project Assignments"
+        label={<span className="font-semibold">Project Assignments</span>}
         name="projectIds"
-        help="Select projects this team member is assigned to"
       >
         <Select
           mode="multiple"
           placeholder="Select projects"
           size="large"
-          className="rounded-lg"
+          className="rounded-lg border-gray-300"
+          value={selectedProjects}
+          onChange={setSelectedProjects}
           showSearch
           optionFilterProp="children"
         >
@@ -384,84 +418,83 @@ export default function UpdateTeamMember() {
               <div className="flex items-center">
                 <div 
                   className="w-3 h-3 rounded-full mr-2"
-                  style={{ backgroundColor: project.color }}
+                  style={{ backgroundColor: '#2563eb' }}
                 ></div>
-                <span>{project.title} - {project.client}</span>
+                <span className="font-medium">{project.name}</span>
+                <span className="ml-2 text-xs text-gray-500">({project.client})</span>
               </div>
             </Option>
           ))}
         </Select>
       </Form.Item>
 
-      <Form.Item
-        label="Intern Assignments"
-        name="internIds"
-        help="Select interns this team member is mentoring"
-      >
-        <Select
-          mode="multiple"
-          placeholder="Select interns"
-          size="large"
-          className="rounded-lg"
-          showSearch
-          optionFilterProp="children"
+      {form.getFieldValue('isLC') && (
+        <Form.Item
+          label={<span className="font-semibold">Intern Assignments</span>}
+          name="internIds"
         >
-          {availableInterns.map(intern => (
-            <Option key={intern.id} value={intern.id}>
-              <div className="flex items-center">
-                <Avatar 
-                  size="small" 
-                  className="mr-2"
-                  style={{ backgroundColor: '#8b5cf6' }}
-                >
-                  {intern.name?.split(' ').map((n: string) => n[0]).join('')}
-                </Avatar>
-                <span>{intern.name} - {intern.studyTrack}</span>
-              </div>
-            </Option>
-          ))}
-        </Select>
-      </Form.Item>
-
-      <Form.Item
-        label="Has Interns?"
-        name="hasInterns"
-        valuePropName="checked"
-      >
-        <Select 
-          placeholder="Select option" 
-          size="large"
-          className="rounded-lg"
-        >
-          <Option value={true}>Yes, managing interns</Option>
-          <Option value={false}>No interns assigned</Option>
-        </Select>
-      </Form.Item>
+          <Select
+            mode="multiple"
+            placeholder="Select interns"
+            size="large"
+            className="rounded-lg border-gray-300"
+            value={selectedInterns}
+            onChange={setSelectedInterns}
+            showSearch
+            optionFilterProp="children"
+          >
+            {interns.map(intern => (
+              <Option key={intern.id} value={intern.id}>
+                <div className="flex items-center">
+                  <Avatar 
+                    size="small" 
+                    className="mr-2"
+                    style={{ backgroundColor: '#7c3aed' }}
+                  >
+                    {intern.name?.split(' ').map((n: string) => n[0]).join('')}
+                  </Avatar>
+                  <span className="font-medium">{intern.name}</span>
+                  <span className="ml-2 text-xs text-gray-500">({intern.email})</span>
+                </div>
+              </Option>
+            ))}
+          </Select>
+        </Form.Item>
+      )}
     </>
   );
 
-  // Define the form sections
   const sections = [
     {
       key: "basic-info",
       title: "Basic Information",
       subtitle: "Update personal and professional details",
-      color: "#3b82f6",
+      color: "#2563eb",
       content: basicInfoContent
     },
     {
-      key: "workload-projects",
-      title: "Workload & Assignments",
-      subtitle: "Update workload, projects, and intern assignments",
-      color: "#10b981",
-      content: workloadProjectsContent
+      key: "skills-workload",
+      title: "Skills & Workload",
+      subtitle: "Update technical skills and workload capacity",
+      color: "#059669",
+      content: skillsWorkloadContent
+    },
+    {
+      key: "assignments",
+      title: "Assignments",
+      subtitle: "Update project and intern assignments",
+      color: "#7c3aed",
+      content: assignmentsContent
     }
   ];
 
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">Loading team member data...</div>
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600 font-medium">Loading team member data...</p>
+        </div>
       </div>
     );
   }
@@ -474,9 +507,12 @@ export default function UpdateTeamMember() {
       submitText="Update Team Member"
       cancelText="Cancel"
       onFinish={handleSubmit}
+      onCancel={handleCancel}
       form={form}
       sections={sections}
-      submitDisabled={!isFormValid}
+      submitDisabled={!isFormValid || saving}
+      loading={saving}
+      width="65%"
     />
   );
 }

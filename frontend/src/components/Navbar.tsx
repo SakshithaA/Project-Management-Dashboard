@@ -5,6 +5,7 @@ import {
   FileTextOutlined,
   BarChartOutlined,
   AppstoreOutlined,
+  ExperimentOutlined
 } from "@ant-design/icons";
 
 export default function Navbar() {
@@ -14,26 +15,17 @@ export default function Navbar() {
   // Check if current path is a form page (where navbar should be hidden)
   const isFormPage = () => {
     const path = location.pathname;
-    return path.includes('addproject') || 
-           path.includes('addpoc') || 
-           path.includes('report') ||
-           path.includes('/project/') ||
-           path.includes('/report/')||
-           path.includes('/team-member/') ||
-           path.includes('/intern/') ||
-           path.includes('/add-poc') ||
-           path.includes('/update-project/') ||
-           path.includes('/update-poc/') ||
-           path.includes('/update-intern/') ||
-           path.includes('/update-team-member/') ||
-           path.includes('poc/')||
-           path.includes('forms/');
+    const formRoutes = [
+      '/addproject',
+      '/addpoc',
+      '/update-project/',
+      '/update-poc/',
+      '/update-intern/',
+      '/update-team-member/',
+      '/intern/edit'
+    ];
+    return formRoutes.some(route => path.includes(route));
   };
-
-  // If on form page, don't render navbar
-  if (isFormPage()) {
-    return null;
-  }
 
   // Get active key from current path
   const getActiveKey = () => {
@@ -47,7 +39,7 @@ export default function Navbar() {
   const handleTabChange = (key: string) => {
     switch(key) {
       case 'overview':
-        navigate('/');
+        navigate('/overview');
         break;
       case 'analytics':
         navigate('/analytics');
@@ -56,7 +48,7 @@ export default function Navbar() {
         navigate('/pocs');
         break;
       default:
-        navigate('/');
+        navigate('/overview');
     }
   };
 
@@ -72,42 +64,53 @@ export default function Navbar() {
     navigate('/report');
   };
 
+  // If on form page, don't render navbar
+  if (isFormPage()) {
+    return null;
+  }
+
   return (
-    <div className="pt-9 pl-15 pr-15 pb-2 bg-white">
+    <div className="pt-6 pl-8 pr-8 pb-2 bg-white border-b border-gray-300 shadow-sm">
       {/* Header Section */}
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6 mb-0">
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6 mb-4">
         {/* Title Section */}
-        <div className="space-y-2">
+        <div className="space-y-1">
           <h1 className="text-2xl font-bold text-gray-900">
-            Project Management
+            Project Management Dashboard
           </h1>
-          <p className="text-gray-500 text-sm">
-            Executive overview of all active projects
+          <p className="text-gray-700 text-sm font-medium">
+            Executive overview of all active projects and team performance
           </p>
         </div>
 
-        {/* Buttons Section - ALL THREE BUTTONS ALWAYS VISIBLE */}
-        <div className="flex flex-wrap gap-4">
+        {/* Buttons Section */}
+        <div className="flex flex-wrap gap-3">
           <Button
+            type="primary"
             icon={<PlusOutlined />}
-            className="h-8 px-4 border border-gray-300 bg-white hover:bg-gray-50 text-gray-700 hover:text-gray-900 hover:border-gray-400 transition-all duration-150 flex items-center gap-2 font-normal"
+            className="bg-blue-600 hover:bg-blue-700 border-blue-600"
             onClick={handleAddProject}
+            size="middle"
           >
             Add Project
           </Button>
           
           <Button
-            icon={<PlusOutlined />}
-            className="h-8 px-4 border border-gray-300 bg-white hover:bg-gray-50 text-gray-700 hover:text-gray-900 hover:border-gray-400 transition-all duration-150 flex items-center gap-2 font-normal"
+            type="primary"
+            icon={<ExperimentOutlined />}
+            className="bg-blue-600 hover:bg-blue-700 border-blue-600"
             onClick={handleAddPOC}
+            size="middle"
           >
             Add POC
           </Button>
           
           <Button
+            type="primary"
             icon={<FileTextOutlined />}
-            className="h-8 px-4 border border-gray-300 bg-white hover:bg-gray-50 text-gray-700 hover:text-gray-900 hover:border-gray-400 transition-all duration-150 flex items-center gap-2 font-normal"
+            className="bg-blue-600 hover:bg-blue-700 border-blue-600"
             onClick={handleGenerateReport}
+            size="middle"
           >
             Generate Report
           </Button>
@@ -122,31 +125,32 @@ export default function Navbar() {
           {
             key: "overview",
             label: (
-              <span className="flex items-center gap-2 px-3 py-2">
-                <AppstoreOutlined />
-                <span className="font-sm">Overview</span>
+              <span className="flex items-center gap-2 px-4 py-2 font-medium">
+                <AppstoreOutlined className="text-base" />
+                <span>Overview</span>
               </span>
             ),
           },
           {
             key: "analytics",
             label: (
-              <span className="flex items-center gap-2 px-3 py-2">
-                <BarChartOutlined />
-                <span className="font-sm">Analytics</span>
+              <span className="flex items-center gap-2 px-4 py-2 font-medium">
+                <BarChartOutlined className="text-base" />
+                <span>Analytics</span>
               </span>
             ),
           },
           {
             key: "pocs",
             label: (
-              <span className="flex items-center gap-2 px-3 py-2">
-                <PlusOutlined />
-                <span className="font-sm">POCs</span>
+              <span className="flex items-center gap-2 px-4 py-2 font-medium">
+                <ExperimentOutlined className="text-base" />
+                <span>POCs</span>
               </span>
             ),
           },
         ]}
+        className="border-b-0"
       />
     </div>
   );
